@@ -21,6 +21,12 @@ function file(): string {
   return path.join(os.homedir(), ".shipyard", "license.json");
 }
 
+/** The saved license key (for authorising broker calls that spend/act on our
+ *  Cloudflare account). Null if not yet activated. */
+export function getKey(): string | null {
+  return load()?.key || null;
+}
+
 export function saveKey(key: string) {
   const dir = path.dirname(file());
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });

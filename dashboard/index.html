@@ -216,9 +216,7 @@
       <div><div class="t">Railway URL <span style="color:var(--muted);font-weight:400">· free, instant</span></div>
         <div class="d">your-app-production.up.railway.app</div></div>
     </div>
-    <!-- Subdomain + own-domain need ShipSurfer's Cloudflare account, which is
-         moving behind the hosted broker. Hidden during this beta. -->
-    <div class="domopt" data-mode="subdomain" onclick="selectDom(this)" style="display:none">
+    <div class="domopt" data-mode="subdomain" onclick="selectDom(this)">
       <span class="radio"></span>
       <div style="flex:1"><div class="t">Free ShipSurfer subdomain</div>
         <div class="subrow">
@@ -228,16 +226,15 @@
         </div>
         <div class="availmsg" id="subAvailMsg"></div></div>
     </div>
-    <div class="domopt" data-mode="domain" onclick="selectDom(this)" style="display:none">
+    <div class="domopt" data-mode="domain" onclick="selectDom(this)">
       <span class="radio"></span>
-      <div style="flex:1"><div class="t">Your own domain <span style="color:var(--muted);font-weight:400">· you own it</span></div>
+      <div style="flex:1"><div class="t">Your own domain <span style="color:var(--muted);font-weight:400">· bought &amp; set up for you</span></div>
         <div class="subrow">
           <input id="shipDomain" placeholder="myapp.com" oninput="resetAvail()" onclick="event.stopPropagation()">
           <button class="btn-sm" onclick="checkDomain(event)">Search</button>
         </div>
         <div class="availmsg" id="availMsg"></div></div>
     </div>
-    <p style="font-size:12.5px;color:var(--muted);margin:2px 2px 0">A free <b>.shipsurfer.app</b> subdomain and custom-domain buying are coming shortly.</p>
 
     <button class="cta" id="shipBtn" onclick="doShip()" style="border:none;cursor:pointer;font-family:inherit">🏄 Ship it</button>
     <div class="shiperr" id="shipErr"></div>

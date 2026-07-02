@@ -101,6 +101,14 @@ app.use(express.json());
 const { brokerRouter } = require("./oauth-broker");
 app.use(brokerRouter());
 
+// Cloudflare broker: subdomains + domain buying via ShipSurfer's own Cloudflare
+// token, gated by a valid license. (See cloudflare-broker.js.)
+const { cloudflareRouter } = require("./cloudflare-broker");
+app.use(cloudflareRouter((key) => {
+  const rec = read()[key];
+  return !!(rec && rec.active);
+}));
+
 app.get("/", (_req, res) => res.redirect("/buy"));
 app.get("/buy", (_req, res) => res.sendFile(path.join(__dirname, "buy.html")));
 app.get("/success", (_req, res) => res.sendFile(path.join(__dirname, "success.html")));
