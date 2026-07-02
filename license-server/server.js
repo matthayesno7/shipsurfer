@@ -22,9 +22,15 @@ const SIMULATE = (process.env.SIMULATE || "true").toLowerCase() === "true";
 // Unlike SIMULATE (a local dev flag), this is meant to run in production while
 // the tool is free for testers. Flip to false + wire Stripe to start charging.
 const FREE_BETA = (process.env.FREE_BETA || "false").toLowerCase() === "true";
-// Persist keys outside the app dir when a volume is mounted (e.g. Railway),
-// so a redeploy doesn't wipe issued licenses.
-const STORE = process.env.LICENSE_STORE || path.join(__dirname, ".licenses.json");
+// Persist keys on a mounted volume so a redeploy doesn't wipe issued licenses.
+// Railway auto-sets RAILWAY_VOLUME_MOUNT_PATH when a volume is attached, so we
+// use it automatically — no manual LICENSE_STORE needed.
+const STORE =
+  process.env.LICENSE_STORE ||
+  (process.env.RAILWAY_VOLUME_MOUNT_PATH
+    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "licenses.json")
+    : path.join(__dirname, ".licenses.json"));
+console.log(`[license] store: ${STORE}`);
 // The server's own public base URL — used to build Stripe success/cancel links
 // back to our own pages. Set to your real domain in production.
 const PUBLIC_URL = (process.env.PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/$/, "");
