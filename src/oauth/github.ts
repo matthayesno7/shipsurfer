@@ -1,4 +1,5 @@
 import { config } from "../config";
+import { refreshViaBroker } from "../broker";
 
 /*
  * GitHub OAuth (user-to-server) flow.
@@ -49,31 +50,12 @@ export async function exchangeCode(code: string): Promise<{
   };
 }
 
-/** Exchange a refresh token for a fresh access token (GitHub App user tokens
- *  expire after ~8h when token expiration is enabled on the App). */
+/** Refresh via the hosted broker (the client secret stays server-side). */
 export async function refresh(refreshToken: string): Promise<{
   accessToken: string;
   refreshToken?: string;
 }> {
-  const res = await fetch("https://github.com/login/oauth/access_token", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({
-      client_id: config.github.clientId,
-      client_secret: config.github.clientSecret,
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-    }),
-  });
-  const data = (await res.json()) as {
-    access_token?: string;
-    refresh_token?: string;
-    error_description?: string;
-  };
-  if (!data.access_token) {
-    throw new Error(data.error_description || "GitHub token refresh failed");
-  }
-  return { accessToken: data.access_token, refreshToken: data.refresh_token };
+  return refreshViaBroker("github", refreshToken);
 }
 
 export async function getLogin(accessToken: string): Promise<string> {

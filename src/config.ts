@@ -1,7 +1,31 @@
 import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import * as crypto from "crypto";
 import * as dotenv from "dotenv";
 
 dotenv.config();
+
+/*
+ * Local encryption key for the token store. Testers don't set this — if it's
+ * absent we generate one and persist it to ~/.shipsurfer/secret so it stays
+ * stable across restarts (needed to decrypt stored tokens).
+ */
+function getOrCreateSecret(): string {
+  if (process.env.SHIPYARD_SECRET) return process.env.SHIPYARD_SECRET;
+  const dir = path.join(os.homedir(), ".shipsurfer");
+  const file = path.join(dir, "secret");
+  try {
+    if (fs.existsSync(file)) return fs.readFileSync(file, "utf8").trim();
+    fs.mkdirSync(dir, { recursive: true });
+    const s = crypto.randomBytes(32).toString("hex");
+    fs.writeFileSync(file, s, { mode: 0o600 });
+    return s;
+  } catch {
+    // Last resort: ephemeral (tokens won't survive a restart, but nothing breaks).
+    return crypto.randomBytes(32).toString("hex");
+  }
+}
 
 function readPrivateKey(): string | undefined {
   if (process.env.GITHUB_PRIVATE_KEY) {
@@ -21,8 +45,12 @@ function readPrivateKey(): string | undefined {
 export const config = {
   port: parseInt(process.env.PORT || "4000", 10),
   baseUrl: process.env.BASE_URL || "http://localhost:4000",
-  secret: process.env.SHIPYARD_SECRET || "",
+  secret: getOrCreateSecret(),
   dryRun: (process.env.DRY_RUN || "true").toLowerCase() === "true",
+
+  // Hosted OAuth broker. It holds the provider client secrets so this local app
+  // never has to. Connect + token refresh route through it.
+  brokerUrl: (process.env.SHIPSURFER_BROKER_URL || "https://api.shipsurfer.app").replace(/\/$/, ""),
 
   github: {
     appId: process.env.GITHUB_APP_ID || "",
@@ -60,14 +88,7 @@ export const config = {
 } as const;
 
 export function assertConfigured(): string[] {
-  const missing: string[] = [];
-  if (!config.secret) missing.push("SHIPYARD_SECRET");
-  if (config.dryRun) return missing; // dry-run needs nothing else
-  if (!config.github.clientId) missing.push("GITHUB_CLIENT_ID");
-  if (!config.github.clientSecret) missing.push("GITHUB_CLIENT_SECRET");
-  if (!config.github.appId) missing.push("GITHUB_APP_ID");
-  if (!config.github.privateKey) missing.push("GITHUB_PRIVATE_KEY");
-  if (!config.railway.clientId) missing.push("RAILWAY_CLIENT_ID");
-  if (!config.railway.clientSecret) missing.push("RAILWAY_CLIENT_SECRET");
-  return missing;
+  // The hosted broker holds all provider client secrets, so the local app needs
+  // none of them. The encryption key is auto-generated. Nothing is required.
+  return [];
 }

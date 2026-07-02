@@ -1,4 +1,5 @@
 import { config } from "../config";
+import { refreshViaBroker } from "../broker";
 
 /*
  * Railway OAuth 2.0 / OIDC ("Login with Railway").
@@ -22,30 +23,12 @@ export function authorizeUrl(state: string): string {
   return `${config.railway.authorizeUrl}?${params.toString()}`;
 }
 
-/** Exchange a refresh token for a fresh access token (Railway tokens last 1h). */
+/** Refresh via the hosted broker (Railway tokens last ~1h; secret stays server-side). */
 export async function refresh(refreshToken: string): Promise<{
   accessToken: string;
   refreshToken?: string;
 }> {
-  const res = await fetch(config.railway.tokenUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: config.railway.clientId,
-      client_secret: config.railway.clientSecret,
-    }).toString(),
-  });
-  const data = (await res.json()) as {
-    access_token?: string;
-    refresh_token?: string;
-    error_description?: string;
-  };
-  if (!data.access_token) {
-    throw new Error(data.error_description || "Railway token refresh failed");
-  }
-  return { accessToken: data.access_token, refreshToken: data.refresh_token };
+  return refreshViaBroker("railway", refreshToken);
 }
 
 /** Identify the connected Railway account (email/name) via /oauth/me. */

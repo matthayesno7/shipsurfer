@@ -90,6 +90,11 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
 
 app.use(express.json());
 
+// OAuth broker: does the code→token exchange server-side so the client secrets
+// never live on a user's machine. (See oauth-broker.js.)
+const { brokerRouter } = require("./oauth-broker");
+app.use(brokerRouter());
+
 app.get("/", (_req, res) => res.redirect("/buy"));
 app.get("/buy", (_req, res) => res.sendFile(path.join(__dirname, "buy.html")));
 app.get("/success", (_req, res) => res.sendFile(path.join(__dirname, "success.html")));

@@ -18,6 +18,7 @@ import { ensureLicensed, BUY_URL } from "./license";
 import * as githubOAuth from "./oauth/github";
 import * as railwayOAuth from "./oauth/railway";
 import * as supabaseOAuth from "./oauth/supabase";
+import { startUrl as brokerStartUrl, exchangeHandoff, BrokerProvider } from "./broker";
 import { checkAvailability, subdomainAvailable } from "./providers/cloudflareClient";
 import { detectStack, suggestAppName, sanitizeAppName } from "./detect";
 
@@ -38,8 +39,6 @@ app.get("/home", (_req, res) => res.sendFile(path.join(DASH, "home.html")));
 app.get("/buy", (_req, res) => res.sendFile(path.join(DASH, "onboarding.html")));
 app.get("/surfing", (_req, res) => res.sendFile(path.join(DASH, "index.html")));
 
-// CSRF state for OAuth round-trips (in-memory; fine for local single-user).
-const oauthState = new Map<string, string>();
 
 // ── Chained connect ──────────────────────────────────────────────────────
 // One "Connect accounts" action walks the user through each provider's consent
@@ -84,127 +83,57 @@ app.get("/api/status", (_req: Request, res: Response) => {
   });
 });
 
-/* ── GitHub connect ───────────────────────────────────────────────────── */
+/* ── Connect (via hosted broker) ──────────────────────────────────────────
+ * The broker (api.shipsurfer.app) holds the provider client secrets and does the
+ * code→token exchange, so this local app never needs them. We just send the user
+ * to the broker's /start, and it bounces them back to /connect/:provider/return
+ * with a one-time handoff code we trade for the tokens. */
 
-app.get("/connect/github", (_req, res) => {
-  const state = crypto.randomUUID();
-  oauthState.set(state, "github");
-  res.redirect(githubOAuth.authorizeUrl(state));
+const BROKER_PROVIDERS: Record<string, BrokerProvider> = {
+  github: "github", railway: "railway", supabase: "supabase",
+};
+
+app.get("/connect/:provider", (req, res) => {
+  const provider = BROKER_PROVIDERS[req.params.provider];
+  if (!provider) return res.status(404).send("unknown provider");
+  res.redirect(brokerStartUrl(provider));
 });
 
-app.get("/connect/github/callback", async (req, res) => {
-  const { code, state, error, error_description } = req.query as {
-    code?: string; state?: string; error?: string; error_description?: string;
-  };
-  if (error) {
-    return res
-      .status(400)
-      .send(`GitHub didn't grant access: ${error}` + (error_description ? ` — ${error_description}` : "") + `. <a href="/surfing">Back</a>`);
-  }
-  if (!state || oauthState.get(state) !== "github") {
-    return res.status(400).send("Invalid OAuth state — click Connect again. <a href='/surfing'>Back</a>");
-  }
-  if (!code) return res.status(400).send("No authorization code returned. <a href='/surfing'>Back</a>");
-  oauthState.delete(state);
+// Resolve a human-friendly account label without needing any secret.
+async function accountLabel(provider: BrokerProvider, accessToken: string): Promise<string> {
   try {
-    const tok = await githubOAuth.exchangeCode(code);
-    const account = await githubOAuth.getLogin(tok.accessToken);
+    if (provider === "github") return await githubOAuth.getLogin(accessToken);
+    if (provider === "railway") {
+      const id = await railwayOAuth.getIdentity(accessToken);
+      return id.email || id.name || "railway account";
+    }
+  } catch { /* fall through */ }
+  return provider === "supabase" ? "supabase org" : `${provider} account`;
+}
+
+app.get("/connect/:provider/return", async (req, res) => {
+  const provider = BROKER_PROVIDERS[req.params.provider];
+  if (!provider) return res.status(404).send("unknown provider");
+  const { handoff, error } = req.query as { handoff?: string; error?: string };
+  if (error) {
+    return res.status(400).send(`${provider} didn't grant access: ${error}. <a href="/surfing">Back</a>`);
+  }
+  if (!handoff) return res.status(400).send("No handoff returned — click Connect again. <a href='/surfing'>Back</a>");
+  try {
+    const tok = await exchangeHandoff(handoff);
+    const account = await accountLabel(provider, tok.accessToken);
     saveConnection(USER, {
-      provider: "github",
+      provider,
       accessToken: tok.accessToken,
       refreshToken: tok.refreshToken,
       account,
       scopes: tok.scopes,
       connectedAt: new Date().toISOString(),
     });
-    log.ok(`GitHub connected as ${account}`);
-    advanceChain(res, "github");
+    log.ok(`${provider} connected as ${account}`);
+    advanceChain(res, provider);
   } catch (e) {
-    res.status(500).send(`GitHub connect failed: ${(e as Error).message}`);
-  }
-});
-
-/* ── Railway connect ──────────────────────────────────────────────────── */
-
-app.get("/connect/railway", (_req, res) => {
-  const state = crypto.randomUUID();
-  oauthState.set(state, "railway");
-  res.redirect(railwayOAuth.authorizeUrl(state));
-});
-
-app.get("/connect/railway/callback", async (req, res) => {
-  const { code, state, error, error_description } = req.query as {
-    code?: string; state?: string; error?: string; error_description?: string;
-  };
-  if (error) {
-    return res
-      .status(400)
-      .send(
-        `Railway didn't grant access: ${error}` +
-          (error_description ? ` — ${error_description}` : "") +
-          `. On the Railway screen you must pick a workspace and click Authorize. <a href="/surfing">Back</a>`
-      );
-  }
-  if (!state || oauthState.get(state) !== "railway") {
-    return res
-      .status(400)
-      .send("Invalid OAuth state — click Connect again (don't restart the server mid-flow). <a href='/surfing'>Back</a>");
-  }
-  if (!code) return res.status(400).send("No authorization code returned. <a href='/surfing'>Back</a>");
-  oauthState.delete(state);
-  try {
-    const tok = await railwayOAuth.exchangeCode(code);
-    const id = await railwayOAuth.getIdentity(tok.accessToken);
-    const account = id.email || id.name || "railway account";
-    saveConnection(USER, {
-      provider: "railway",
-      accessToken: tok.accessToken,
-      refreshToken: tok.refreshToken,
-      account,
-      connectedAt: new Date().toISOString(),
-    });
-    log.ok(`Railway connected as ${account}`);
-    advanceChain(res, "railway");
-  } catch (e) {
-    res.status(500).send(`Railway connect failed: ${(e as Error).message}`);
-  }
-});
-
-/* ── Supabase connect ─────────────────────────────────────────────────── */
-
-app.get("/connect/supabase", (_req, res) => {
-  const state = crypto.randomUUID();
-  oauthState.set(state, "supabase");
-  res.redirect(supabaseOAuth.authorizeUrl(state));
-});
-
-app.get("/connect/supabase/callback", async (req, res) => {
-  const { code, state, error, error_description } = req.query as {
-    code?: string; state?: string; error?: string; error_description?: string;
-  };
-  if (error) {
-    return res
-      .status(400)
-      .send(`Supabase didn't grant access: ${error}` + (error_description ? ` — ${error_description}` : "") + `. <a href="/surfing">Back</a>`);
-  }
-  if (!state || oauthState.get(state) !== "supabase") {
-    return res.status(400).send("Invalid OAuth state — click Connect again. <a href='/surfing'>Back</a>");
-  }
-  if (!code) return res.status(400).send("No authorization code returned. <a href='/surfing'>Back</a>");
-  oauthState.delete(state);
-  try {
-    const tok = await supabaseOAuth.exchangeCode(code);
-    saveConnection(USER, {
-      provider: "supabase",
-      accessToken: tok.accessToken,
-      refreshToken: tok.refreshToken,
-      account: "supabase org",
-      connectedAt: new Date().toISOString(),
-    });
-    log.ok("Supabase connected");
-    advanceChain(res, "supabase");
-  } catch (e) {
-    res.status(500).send(`Supabase connect failed: ${(e as Error).message}`);
+    res.status(500).send(`${provider} connect failed: ${(e as Error).message}. <a href="/surfing">Back</a>`);
   }
 });
 
