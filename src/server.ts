@@ -42,7 +42,11 @@ app.use(express.static(DASH, { index: false }));
 // Named routes for the flow: home → buy → surfing (connect) → ship.
 app.get("/", (_req, res) => res.redirect("/home"));
 app.get("/home", (_req, res) => res.sendFile(path.join(DASH, "home.html")));
-app.get("/buy", (_req, res) => res.sendFile(path.join(DASH, "onboarding.html")));
+// Send buyers to the REAL hosted Stripe checkout (not the old local simulator),
+// with a return link so the key auto-activates back here after payment.
+app.get("/buy", (_req, res) =>
+  res.redirect(`${BUY_URL}?return=${encodeURIComponent(`http://localhost:${config.port}/activate`)}`)
+);
 app.get("/surfing", (_req, res) => res.sendFile(path.join(DASH, "index.html")));
 
 // After paying on the hosted buy page, the browser lands here with the key —
