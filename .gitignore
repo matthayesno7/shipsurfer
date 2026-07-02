@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.shipyard/
+*.log
+
+# issued license keys (local dev store)
+license-server/.licenses.json
+# demo scratch dirs
+.demo-home/
+.demo-run/

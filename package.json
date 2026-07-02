@@ -1,0 +1,34 @@
+{
+  "name": "shipyard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One-click production deployment for apps built with Claude Code. v0.1: GitHub + Railway.",
+  "type": "commonjs",
+  "bin": {
+    "shipyard": "dist/cli/ship.js"
+  },
+  "scripts": {
+    "demo": "node demo.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "ts-node src/server.ts",
+    "start": "node dist/src/server.js",
+    "ship": "ts-node cli/ship.ts",
+    "ship:built": "node dist/cli/ship.js",
+    "demo:journey": "bash scripts/demo-journey.sh"
+  },
+  "dependencies": {
+    "@octokit/auth-app": "^7.1.0",
+    "@octokit/rest": "^21.0.2",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.7.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  }
+}

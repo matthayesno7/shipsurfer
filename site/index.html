@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ShipSurfer — ship your Claude Code app in a few clicks</title>
+<meta name="description" content="Repo, database, hosting and a custom domain — set up for you, on your own accounts. No terminal. Just ask Claude to ship it." />
+<meta property="og:title" content="ShipSurfer — ship your Claude Code app in a few clicks" />
+<meta property="og:description" content="Repo, database, hosting and a custom domain — set up for you, on your own GitHub, Supabase and Railway accounts. No terminal." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F1E8; --ink:#23201A; --muted:#6E695D; --surface:#FFFFFF;
+    --border:#E6E0D2; --hair:#EFEADD; --accent:#1B6B52; --accent-soft:rgba(27,107,82,.10);
+    --shadow:0 30px 60px -38px rgba(35,32,26,.28), 0 2px 6px rgba(35,32,26,.04);
+  }
+  [data-theme="dark"]{
+    --bg:#16140F; --ink:#F3EFE5; --muted:#A39C8C; --surface:#1F1C16;
+    --border:#332E25; --hair:#2A261E; --accent:#46B891; --accent-soft:rgba(70,184,145,.14);
+    --shadow:0 30px 60px -34px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;
+    justify-content:center;padding:56px 40px;font-family:'Schibsted Grotesk',-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;transition:background .25s,color .25s;}
+  ::selection{background:rgba(27,107,82,.18);}
+  .frame{width:100%;max-width:760px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 4px;}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .brand b{font-size:18px;font-weight:600;letter-spacing:-.01em;}
+  .topright{display:flex;align-items:center;gap:14px;}
+  .pill{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);border:1px solid var(--accent);
+    border-radius:999px;padding:7px 14px;white-space:nowrap;background:var(--accent-soft);}
+  .moon{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);display:inline-flex;
+    align-items:center;justify-content:center;color:var(--muted);font-size:15px;cursor:pointer;background:transparent;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:22px;
+    padding:46px 48px;box-shadow:var(--shadow);margin-top:26px;}
+  h1{font-weight:700;font-size:34px;line-height:1.12;letter-spacing:-.025em;max-width:520px;}
+  h1 .ac{color:var(--accent);}
+  .lead{font-size:17.5px;line-height:1.6;color:var(--muted);max-width:540px;margin:18px 0 0;}
+  .price{display:flex;align-items:baseline;gap:14px;margin:34px 0 30px;flex-wrap:wrap;}
+  .price .amt{font-weight:700;font-size:52px;line-height:.9;letter-spacing:-.03em;}
+  .price .per{font-size:16px;color:var(--muted);}
+  .beta{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);border:1px solid var(--accent);
+    border-radius:999px;padding:5px 11px;background:var(--accent-soft);}
+  .checks{display:flex;flex-direction:column;gap:16px;}
+  .check{display:flex;align-items:flex-start;gap:13px;}
+  .check .tick{color:var(--accent);font-weight:700;line-height:1.4;}
+  .check span:last-child{font-size:16px;line-height:1.4;}
+
+  .cta-wrap{margin-top:40px;}
+  .cta{display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:600;color:#fff;
+    background:var(--accent);border:none;cursor:pointer;text-decoration:none;padding:15px 26px;border-radius:12px;
+    box-shadow:0 1px 2px rgba(35,32,26,.10);transition:filter .15s;font-family:inherit;}
+  .cta:hover{filter:brightness(.92);}
+  .ghost{margin-left:16px;font-size:15px;color:var(--accent);text-decoration:none;font-weight:600;}
+  .ghost:hover{text-decoration:underline;}
+
+  /* signup */
+  .signup{display:none;margin-top:34px;border-top:1px solid var(--hair);padding-top:28px;}
+  .signup.show{display:block;}
+  .signup label{display:block;font-size:14px;color:var(--muted);margin-bottom:8px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  input[type=email]{flex:1;min-width:220px;background:var(--bg);border:1px solid var(--border);border-radius:11px;
+    padding:14px 15px;font-size:16px;color:var(--ink);outline:none;font-family:inherit;}
+  input[type=email]:focus{border-color:var(--accent);}
+  .thanks{display:none;font-size:16px;color:var(--accent);font-weight:600;margin-top:8px;}
+  .thanks.show{display:block;}
+
+  .foot{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin:22px 4px 0;}
+  .foot a{color:var(--accent);text-decoration:none;}
+
+  @media(max-width:600px){
+    body{padding:28px 18px;}
+    .card{padding:30px 24px;}
+    h1{font-size:27px;}
+    .pill{display:none;}
+    .price .amt{font-size:44px;}
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+
+    <div class="topbar">
+      <div class="brand">
+        <span style="font-size:20px;line-height:1">🏄</span>
+        <b>ShipSurfer</b>
+      </div>
+      <div class="topright">
+        <span class="pill">now in private beta</span>
+        <button class="moon" id="themeBtn" onclick="toggleTheme()" title="Toggle light / dark">☾</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h1>Ship your Claude Code app in <span class="ac">a few clicks</span>.</h1>
+      <p class="lead">Repo, database, hosting and a custom domain — set up for you, on your own
+        GitHub, Supabase and Railway accounts. No terminal, no faff. Just ask Claude to ship it.</p>
+
+      <div class="price">
+        <span class="amt">$99</span>
+        <span class="per">one-time · lifetime license</span>
+        <span class="beta">free during beta</span>
+      </div>
+
+      <div class="checks">
+        <div class="check"><span class="tick">✓</span><span>GitHub repo created &amp; your code pushed</span></div>
+        <div class="check"><span class="tick">✓</span><span>Supabase database provisioned &amp; wired in automatically</span></div>
+        <div class="check"><span class="tick">✓</span><span>Deployed live to Railway</span></div>
+        <div class="check"><span class="tick">✓</span><span>Custom domain bought &amp; pointed, with HTTPS</span></div>
+        <div class="check"><span class="tick">✓</span><span>Runs locally — we never see your credentials</span></div>
+      </div>
+
+      <div class="cta-wrap">
+        <button class="cta" id="joinBtn" onclick="openSignup()">Join the beta <span style="font-size:17px">→</span></button>
+        <a class="ghost" href="/paddleout">How it works →</a>
+      </div>
+
+      <form class="signup" id="signup" onsubmit="return submitSignup(event)">
+        <label>Drop your email and we'll send you an invite.</label>
+        <div class="row">
+          <input type="email" id="email" placeholder="you@example.com" required />
+          <button class="cta" type="submit">Request invite</button>
+        </div>
+        <p class="thanks" id="thanks">Thanks — you're on the list. We'll be in touch soon. 🌊</p>
+      </form>
+    </div>
+
+    <p class="foot">Built for Claude Code · <a href="/paddleout">read the guide</a> · runs on your machine, never ours.</p>
+  </div>
+
+<script>
+  function toggleTheme(){
+    const dark=document.documentElement.getAttribute("data-theme")==="dark";
+    document.documentElement.setAttribute("data-theme",dark?"":"dark");
+    document.getElementById("themeBtn").textContent=dark?"☾":"☀";
+  }
+  function openSignup(){
+    document.getElementById("signup").classList.add("show");
+    document.getElementById("joinBtn").style.display="none";
+    document.getElementById("email").focus();
+  }
+  function submitSignup(e){
+    e.preventDefault();
+    const email=document.getElementById("email").value.trim();
+    if(!email) return false;
+    // No backend needed: open a pre-filled email to the ShipSurfer inbox.
+    const subject=encodeURIComponent("ShipSurfer beta — invite request");
+    const body=encodeURIComponent("I'd like to join the ShipSurfer beta.\n\nEmail: "+email);
+    window.location.href="mailto:matthayesno7@gmail.com?subject="+subject+"&body="+body;
+    document.getElementById("thanks").classList.add("show");
+    return false;
+  }
+</script>
+</body>
+</html>

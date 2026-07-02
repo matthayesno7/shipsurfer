@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ShipSurfer — you're in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F5F1E8;--ink:#23201A;--muted:#6E695D;--surface:#fff;--border:#E6E0D2;--accent:#1B6B52;--accent-soft:rgba(27,107,82,.1);}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:40px 20px;font-family:'Schibsted Grotesk',-apple-system,sans-serif;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:20px;padding:36px 40px;max-width:460px;width:100%;
+    box-shadow:0 30px 60px -38px rgba(35,32,26,.28);}
+  .brand{font-size:19px;font-weight:700;margin-bottom:20px;}
+  h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px;}
+  .per{color:var(--muted);font-size:15px;margin:8px 0 4px;}
+  .keybox{font-family:'JetBrains Mono',monospace;background:var(--accent-soft);border:1px dashed var(--accent);color:var(--accent);
+    padding:14px;border-radius:11px;text-align:center;font-size:16px;letter-spacing:1px;margin:16px 0;word-break:break-all;}
+  .step{font-size:14.5px;color:var(--ink);line-height:1.7;}
+  code{font-family:'JetBrains Mono',monospace;background:var(--accent-soft);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:13px;}
+  .row{display:flex;gap:8px;align-items:center;margin-top:6px;}
+  button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;}
+  button:hover{filter:brightness(.93);}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;vertical-align:-3px;margin-right:8px;}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .err{color:#b23b3b;font-size:14px;margin-top:10px;}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">🏄 ShipSurfer</div>
+    <div id="wait">
+      <h1>Confirming your payment…</h1>
+      <p class="per"><span class="spin"></span>One moment while we issue your license.</p>
+      <p class="err" id="err"></p>
+    </div>
+    <div id="done" style="display:none">
+      <h1>✅ You're all set</h1>
+      <p class="per">Your ShipSurfer license key — keep it safe:</p>
+      <div class="keybox" id="key"></div>
+      <div class="step">
+        <b>Activate it:</b> paste this to Claude, or run in your terminal:
+        <div class="row"><code id="cmd"></code><button onclick="copyCmd()">Copy</button></div>
+        <p class="per" style="margin-top:14px">Then just tell Claude <b>"ship this with ShipSurfer"</b> in your project. 🌊</p>
+      </div>
+    </div>
+  </div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const sid = params.get("session_id");
+  const err = document.getElementById("err");
+  let tries = 0;
+
+  function show(key){
+    document.getElementById("wait").style.display="none";
+    document.getElementById("done").style.display="block";
+    document.getElementById("key").textContent = key;
+    document.getElementById("cmd").textContent = "shipsurfer activate " + key;
+  }
+  function copyCmd(){ navigator.clipboard.writeText(document.getElementById("cmd").textContent); }
+
+  async function poll(){
+    if(!sid){ err.textContent="Missing session — return to the buy page and try again."; return; }
+    try{
+      const r = await fetch("/key?session_id=" + encodeURIComponent(sid));
+      const j = await r.json();
+      if(j.key){ show(j.key); return; }
+      if(j.error){ err.textContent = j.error; }
+    }catch(e){ /* keep polling */ }
+    if(++tries < 20){ setTimeout(poll, 1500); }
+    else { err.textContent = "Still confirming… refresh this page in a moment."; }
+  }
+  poll();
+</script>
+</body>
+</html>

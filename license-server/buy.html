@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Get ShipSurfer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F5F1E8;--ink:#23201A;--muted:#6E695D;--surface:#fff;--border:#E6E0D2;--accent:#1B6B52;--accent-soft:rgba(27,107,82,.1);}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#F5F1E8;color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:40px 20px;font-family:'Schibsted Grotesk',-apple-system,sans-serif;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:20px;padding:36px 40px;max-width:440px;width:100%;
+    box-shadow:0 30px 60px -38px rgba(35,32,26,.28);}
+  .brand{font-size:19px;font-weight:700;margin-bottom:20px;}
+  h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px;}
+  .price{font-size:40px;font-weight:800;letter-spacing:-1px;margin:14px 0 4px;}
+  .per{color:var(--muted);font-size:15px;margin-bottom:20px;}
+  ul{list-style:none;display:grid;gap:8px;margin:0 0 22px;}
+  li{font-size:14.5px;display:flex;gap:9px;}li .c{color:var(--accent);}
+  label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px;}
+  input{width:100%;background:#F5F1E8;border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:15px;outline:none;font-family:inherit;margin-bottom:16px;}
+  button{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;}
+  button:hover{filter:brightness(.93);}button:disabled{opacity:.5;}
+  .test{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);text-align:center;margin-top:14px;}
+  .done{display:none;}
+  .keybox{font-family:'JetBrains Mono',monospace;background:var(--accent-soft);border:1px dashed var(--accent);color:var(--accent);
+    padding:14px;border-radius:11px;text-align:center;font-size:15px;letter-spacing:1px;margin:14px 0;word-break:break-all;}
+  .step{font-size:14px;color:var(--muted);line-height:1.6;}
+  code{font-family:'JetBrains Mono',monospace;background:var(--accent-soft);border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:13px;}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">🏄 ShipSurfer</div>
+    <div id="buy">
+      <h1>Ship your Claude Code app in a few clicks</h1>
+      <div class="price" id="price">$99</div>
+      <div class="per" id="per">one-time · lifetime license</div>
+      <ul>
+        <li><span class="c">✓</span> Repo, database, hosting &amp; a domain — set up for you</li>
+        <li><span class="c">✓</span> On your own GitHub, Supabase &amp; Railway accounts</li>
+        <li><span class="c">✓</span> Just ask Claude to ship it</li>
+      </ul>
+      <label>Email (your key is sent here)</label>
+      <input id="email" type="text" value="you@example.com">
+      <button id="payBtn" onclick="pay()">Pay $99</button>
+      <div class="test" id="test">Test mode — no card, no charge.</div>
+    </div>
+    <div id="done" class="done">
+      <h1>✅ You're all set</h1>
+      <p class="per" style="margin-top:8px">Your ShipSurfer license key:</p>
+      <div class="keybox" id="key"></div>
+      <div class="step">Activate it — paste this to Claude, or run in your terminal:<br>
+        <code id="cmd"></code></div>
+    </div>
+  </div>
+<script>
+// Adjust the page for free-beta mode (real keys, no charge).
+(async()=>{
+  try{
+    const h=await (await fetch("/health")).json();
+    if(h.freeBeta){
+      document.getElementById("price").innerHTML='Free <span style="font-size:20px;font-weight:600;color:var(--muted);text-decoration:line-through">$99</span>';
+      document.getElementById("per").textContent="free during beta · lifetime license";
+      document.getElementById("payBtn").textContent="Get my free license";
+      document.getElementById("test").textContent="Beta — no card, no charge. Your key works forever.";
+    }
+  }catch(e){}
+})();
+async function pay(){
+  const b=document.getElementById("payBtn");const orig=b.textContent;b.textContent="Processing…";b.disabled=true;
+  const email=document.getElementById("email").value.trim();
+  try{
+    const r=await fetch("/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+    const j=await r.json();
+    if(j.url){location.href=j.url;return;} // real Stripe mode
+    if(j.key){
+      document.getElementById("buy").style.display="none";
+      document.getElementById("done").style.display="block";
+      document.getElementById("key").textContent=j.key;
+      document.getElementById("cmd").textContent="shipsurfer activate "+j.key;
+      return;
+    }
+    b.textContent=orig;b.disabled=false;alert(j.error||"Something went wrong");
+  }catch(e){b.textContent=orig;b.disabled=false;alert("Could not reach the server.");}
+}
+</script>
+</body>
+</html>

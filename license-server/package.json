@@ -1,0 +1,15 @@
+{
+  "name": "shipyard-license-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The one hosted piece of Shipyard: Stripe checkout + license key issuance + validation.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "stripe": "^16.12.0"
+  }
+}

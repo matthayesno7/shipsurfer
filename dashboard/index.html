@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ShipSurfer — connect & ship</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F1E8; --glow:#efe9da; --ink:#23201A; --muted:#6E695D; --surface:#FFFFFF;
+    --border:#E6E0D2; --hair:#EFEADD; --accent:#1B6B52; --accent-soft:rgba(27,107,82,.10);
+    --shadow:0 30px 60px -38px rgba(35,32,26,.28), 0 2px 6px rgba(35,32,26,.04);
+  }
+  [data-theme="dark"]{
+    --bg:#16140F; --glow:#1d1a13; --ink:#F3EFE5; --muted:#A39C8C; --surface:#1F1C16;
+    --border:#332E25; --hair:#2A261E; --accent:#46B891; --accent-soft:rgba(70,184,145,.14);
+    --shadow:0 30px 60px -34px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:radial-gradient(1100px 560px at 50% -12%,var(--glow),var(--bg) 60%);
+    color:var(--ink);min-height:100vh;padding:48px 24px 80px;
+    font-family:'Schibsted Grotesk',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;}
+  .frame{max-width:680px;margin:0 auto;}
+  ::selection{background:rgba(27,107,82,.18);}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .ring{width:24px;height:24px;border-radius:50%;border:2px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;}
+  .ring i{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .brand b{font-size:18px;font-weight:600;letter-spacing:-.01em;}
+  .topright{display:flex;align-items:center;gap:12px;}
+  .badge{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.05em;color:var(--muted);
+    border:1px solid var(--border);border-radius:999px;padding:6px 12px;}
+  .badge.live{color:var(--accent);border-color:var(--accent);}
+  .moon{width:32px;height:30px;border-radius:999px;border:1px solid var(--border);background:transparent;
+    color:var(--muted);cursor:pointer;font-size:14px;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    padding:32px 34px;box-shadow:var(--shadow);margin-bottom:20px;}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px;}
+  .sub{color:var(--muted);font-size:15.5px;line-height:1.55;margin-bottom:24px;max-width:520px;}
+  h2{font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--muted);margin-bottom:18px;}
+
+  .conn{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid var(--hair);}
+  .conn:last-of-type{border-bottom:none;}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--border);flex:none;}
+  .dot.on{background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);}
+  .conn .name{font-weight:600;flex:1;}
+  .conn .state{font-size:13.5px;color:var(--muted);}
+  .conn .state.ok{color:var(--accent);}
+  .reconnect{font-size:13px;color:var(--muted);text-decoration:none;border-bottom:1px dashed var(--border);}
+
+  .cta{display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:600;color:#fff;
+    background:var(--accent);text-decoration:none;padding:14px 24px;border-radius:12px;margin-top:24px;
+    box-shadow:0 1px 2px rgba(35,32,26,.1);transition:filter .15s;}
+  .cta:hover{filter:brightness(.92);}
+  .allset{display:flex;align-items:center;gap:9px;margin-top:24px;color:var(--accent);font-weight:600;}
+
+  .ship-note{font-size:14.5px;color:var(--muted);line-height:1.6;}
+  code{font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--hair);
+    border:1px solid var(--border);border-radius:6px;padding:2px 7px;}
+
+  .deploy{padding:16px 0;border-bottom:1px solid var(--hair);}
+  .deploy:last-child{border-bottom:none;}
+  .deploy h3{font-size:16px;font-weight:600;margin-bottom:3px;}
+  .deploy .url a{color:var(--accent);font-size:14px;}
+  .deploy .muted{color:var(--muted);font-weight:400;font-size:13px;}
+  .step{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:3px 0;}
+  .step .s{width:16px;text-align:center;}
+  .step.pending{color:var(--muted);} .step.running{color:#b8860b;}
+  .step.done{color:var(--accent);} .step.failed{color:#c0392b;}
+  .empty{color:var(--muted);font-size:14px;}
+
+  .surf{font-size:21px;line-height:1;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .field input,.subrow input{width:100%;background:var(--surface);border:1px solid var(--border);
+    color:var(--ink);border-radius:10px;padding:11px 13px;font-size:15px;outline:none;font-family:inherit;}
+  .field input:focus,.subrow input:focus{border-color:var(--accent);}
+  .optrow{display:flex;align-items:center;gap:12px;padding:10px 0 6px;}
+  .optrow>div:first-child{flex:1;font-size:14.5px;}
+  .switch{width:44px;height:25px;border-radius:999px;background:var(--border);position:relative;cursor:pointer;transition:.2s;flex:none;}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.2s;}
+  .switch.on{background:var(--accent);}
+  .switch.on::after{left:22px;}
+  .domopt{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:1px solid var(--border);
+    border-radius:12px;margin-bottom:9px;cursor:pointer;background:var(--surface);transition:.15s;}
+  .domopt.selected{border-color:var(--accent);background:var(--accent-soft);}
+  .domopt .radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex:none;margin-top:1px;}
+  .domopt.selected .radio{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 0 5px,transparent 6px);}
+  .domopt .t{font-weight:600;font-size:14.5px;}
+  .domopt .d{font-size:12.5px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+  .subrow{display:flex;align-items:center;gap:8px;margin-top:10px;}
+  .subrow .suffix{color:var(--muted);font-size:14px;white-space:nowrap;}
+  .btn-sm{background:var(--ink);color:var(--surface);border:none;border-radius:9px;padding:10px 15px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;}
+  .availmsg{font-size:13px;margin-top:9px;}
+  .availmsg.ok{color:var(--accent);} .availmsg.bad{color:#c0392b;}
+  .shiperr{color:#c0392b;font-size:13.5px;margin-top:10px;}
+  /* your live apps */
+  .app-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--hair);}
+  .app-row:last-child{border-bottom:none;}
+  .app-name{font-weight:600;font-size:15px;}
+  .app-url{color:var(--accent);font-size:13px;text-decoration:none;font-family:'JetBrains Mono',monospace;}
+  .app-dom{font-size:12.5px;margin-top:3px;}
+  .app-dom .okd{color:var(--accent);} .app-dom .muted{color:var(--muted);}
+  .formbanner{background:var(--accent-soft);border:1px solid var(--accent);border-radius:11px;
+    padding:12px 14px;margin-bottom:16px;font-size:14px;line-height:1.5;}
+  .formbanner a{color:var(--accent);}
+  .formbanner .x{float:right;cursor:pointer;color:var(--muted);font-weight:700;}
+
+  /* terminal-style live ship panel (the hero) */
+  .shipnow .term{background:#0d1322;border:1px solid #20283c;border-radius:14px;padding:22px 24px;
+    font-family:'JetBrains Mono',monospace;color:#e6e9f0;box-shadow:var(--shadow);}
+  .term-head{font-size:14px;margin-bottom:16px;color:#fff;}
+  .tstep{display:flex;gap:10px;padding:5px 0;font-size:13.5px;align-items:flex-start;line-height:1.5;}
+  .tstep .ic{width:14px;flex:none;text-align:center;}
+  .tstep.pending{color:#5b6675;}
+  .tstep.running{color:#7cc4ff;}
+  .tstep.running .ic{display:inline-block;animation:spin 1.1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .tstep.done{color:#6ee7b7;}
+  .tstep.failed{color:#ff8a80;}
+  .tstep .detail{color:#5b6675;}
+  .term-live{margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);}
+  .term-live .liveok{color:#6ee7b7;font-weight:600;margin-bottom:10px;}
+  .term-live .livefail{color:#ff8a80;margin-bottom:10px;}
+  .term-live .urlbtn{display:inline-flex;align-items:center;gap:8px;color:#6ee7b7;text-decoration:none;
+    background:rgba(110,231,183,.12);border:1px solid rgba(110,231,183,.32);padding:10px 15px;border-radius:9px;font-size:14px;}
+  .again{margin-left:10px;background:#1b2233;color:#e6e9f0;border:1px solid #2a3346;border-radius:9px;
+    padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+
+  /* animated surfer riding the wave during propagation */
+  .wave-wrap{position:relative;height:76px;margin-top:16px;border-radius:10px;overflow:hidden;
+    background:linear-gradient(180deg,#0b1526 0%,#103257 100%);border:1px solid #17324f;}
+  .wave-emojis{position:absolute;bottom:-6px;left:0;white-space:nowrap;font-size:26px;line-height:1;
+    letter-spacing:-3px;animation:seamove 3.2s linear infinite;}
+  @keyframes seamove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .surfer{position:absolute;bottom:26px;font-size:30px;
+    animation:ride 4.6s linear infinite, bob 1.1s ease-in-out infinite;}
+  @keyframes ride{0%{left:-6%}100%{left:104%}}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-9deg)}50%{transform:translateY(-9px) rotate(9deg)}}
+  .wave-caption{position:absolute;top:9px;left:13px;right:13px;font-size:11.5px;color:#a9cdee;
+    font-family:'JetBrains Mono',monospace;}
+  .propnote{margin-top:12px;font-size:12.5px;color:#a9cdee;line-height:1.55;
+    background:rgba(124,196,255,.08);border:1px solid rgba(124,196,255,.22);
+    border-radius:9px;padding:10px 12px;font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="topbar">
+    <div class="brand"><span class="surf">🏄</span><b>ShipSurfer</b></div>
+    <div class="topright">
+      <span class="badge" id="badge">…</span>
+      <button class="moon" id="themeBtn" onclick="toggleTheme()" title="Light / dark">☾</button>
+    </div>
+  </div>
+
+  <!-- Connect -->
+  <div class="card">
+    <h1>Connect your accounts</h1>
+    <p class="sub">One step. You'll approve each on its own site, then you're set — every
+      future ship is quick, no reconnecting.</p>
+
+    <h2>Connections</h2>
+    <div class="conn">
+      <span class="dot" id="dot-github"></span>
+      <span class="name">GitHub</span>
+      <span class="state" id="state-github">not connected</span>
+    </div>
+    <div class="conn">
+      <span class="dot" id="dot-railway"></span>
+      <span class="name">Railway</span>
+      <span class="state" id="state-railway">not connected</span>
+    </div>
+    <div class="conn">
+      <span class="dot" id="dot-supabase"></span>
+      <span class="name">Supabase</span>
+      <span class="state" id="state-supabase">not connected</span>
+    </div>
+
+    <a class="cta" id="connectBtn" href="/connect/all">Connect accounts →</a>
+    <div class="allset" id="allset" style="display:none">✓ All connected — ready to ship.</div>
+  </div>
+
+  <!-- Active ship — the hero progress view -->
+  <div class="card shipnow" id="shipNow" style="display:none">
+    <div class="term">
+      <div class="term-head">🏄 Shipping <span id="snName"></span></div>
+      <div id="snSteps"></div>
+      <div class="wave-wrap" id="snWave" style="display:none">
+        <div class="wave-emojis">🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊</div>
+        <span class="surfer">🏄</span>
+        <div class="wave-caption" id="snWaveCap"></div>
+      </div>
+      <div id="snLive" class="term-live" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Ship -->
+  <div class="card" id="shipForm">
+    <h1>Ship your app</h1>
+    <p class="sub">Point us at your project folder, choose how it goes live, and ship.</p>
+    <div id="formBanner" class="formbanner" style="display:none"></div>
+
+    <div class="field">
+      <label>Project folder <span style="opacity:.7">(only needed here — in Claude it's automatic)</span></label>
+      <input id="shipPath" placeholder="/Users/you/my-project" oninput="updateBanner()">
+    </div>
+    <h2 style="margin-top:20px">How it goes live</h2>
+    <div class="domopt selected" data-mode="railway" onclick="selectDom(this)">
+      <span class="radio"></span>
+      <div><div class="t">Railway URL <span style="color:var(--muted);font-weight:400">· free, instant</span></div>
+        <div class="d">your-app-production.up.railway.app</div></div>
+    </div>
+    <div class="domopt" data-mode="subdomain" onclick="selectDom(this)">
+      <span class="radio"></span>
+      <div style="flex:1"><div class="t">Free ShipSurfer subdomain</div>
+        <div class="subrow">
+          <input id="shipSub" placeholder="myapp" oninput="resetSubAvail()" onclick="event.stopPropagation()">
+          <span class="suffix">.shipsurfer.app</span>
+          <button class="btn-sm" onclick="checkSub(event)">Check</button>
+        </div>
+        <div class="availmsg" id="subAvailMsg"></div></div>
+    </div>
+    <div class="domopt" data-mode="domain" onclick="selectDom(this)">
+      <span class="radio"></span>
+      <div style="flex:1"><div class="t">Your own domain <span style="color:var(--muted);font-weight:400">· you own it</span></div>
+        <div class="subrow">
+          <input id="shipDomain" placeholder="myapp.com" oninput="resetAvail()" onclick="event.stopPropagation()">
+          <button class="btn-sm" onclick="checkDomain(event)">Search</button>
+        </div>
+        <div class="availmsg" id="availMsg"></div></div>
+    </div>
+
+    <button class="cta" id="shipBtn" onclick="doShip()" style="border:none;cursor:pointer;font-family:inherit">🏄 Ship it</button>
+    <div class="shiperr" id="shipErr"></div>
+  </div>
+
+  <!-- Deploys -->
+  <div class="card">
+    <h2>Deploys</h2>
+    <div id="deploys"><p class="empty">No deploys yet.</p></div>
+  </div>
+</div>
+
+<script>
+const ICON={pending:"○",running:"◐",done:"✓",failed:"✗"};
+function toggleTheme(){
+  const d=document.documentElement.getAttribute("data-theme")==="dark";
+  document.documentElement.setAttribute("data-theme",d?"":"dark");
+  document.getElementById("themeBtn").textContent=d?"☾":"☀";
+}
+async function refresh(){
+  let status,ships;
+  try{
+    [status,ships]=await Promise.all([
+      fetch("/api/status").then(r=>r.json()),
+      fetch("/api/ships").then(r=>r.json()),
+    ]);
+  }catch(e){return;}
+
+  const badge=document.getElementById("badge");
+  badge.textContent=status.dryRun?"DRY-RUN":"LIVE";
+  badge.className="badge"+(status.dryRun?"":" live");
+
+  for(const p of ["github","railway","supabase"]){
+    const on=status.connected.includes(p);
+    document.getElementById("dot-"+p).classList.toggle("on",on);
+    const st=document.getElementById("state-"+p);
+    const acct=(status.accounts&&status.accounts[p])||"";
+    st.textContent=on?(acct?("connected · "+acct):"connected"):"not connected";
+    st.className="state"+(on?" ok":"");
+  }
+  const allOn=["github","railway","supabase"].every(p=>status.connected.includes(p));
+  document.getElementById("connectBtn").style.display=allOn?"none":"inline-flex";
+  document.getElementById("connectBtn").textContent=
+    status.connected.length?"Connect remaining →":"Connect accounts →";
+  document.getElementById("allset").style.display=allOn?"flex":"none";
+
+  renderActive(ships);
+  renderApps(ships);
+
+  const box=document.getElementById("deploys");
+  if(!ships.length){box.innerHTML='<p class="empty">No deploys yet.</p>';return;}
+  box.innerHTML=ships.map(j=>{
+    const steps=j.steps.map(s=>`<div class="step ${s.status}"><span class="s">${ICON[s.status]}</span>
+      <span>${s.label}</span>${s.detail?`<span class="muted">— ${s.detail}</span>`:""}</div>`).join("");
+    const url=j.liveUrl?`<div class="url">🔗 <a href="${j.liveUrl}" target="_blank">${j.liveUrl}</a></div>`:"";
+    return `<div class="deploy"><h3>${j.appName} <span class="muted">· ${j.status}</span></h3>${url}${steps}</div>`;
+  }).join("");
+}
+/* ── Active ship (terminal-style hero) ──────────────────────────────── */
+let activeId=null;
+const TI={pending:"○",running:"◐",done:"✓",failed:"✗"};
+function renderActive(ships){
+  const panel=document.getElementById("shipNow");
+  const form=document.getElementById("shipForm");
+  if(!activeId){panel.style.display="none";form.style.display="";return;}
+  const j=ships.find(x=>x.id===activeId);
+  if(!j){return;}
+  panel.style.display="";form.style.display="none";
+  document.getElementById("snName").textContent=j.appName;
+  document.getElementById("snSteps").innerHTML=j.steps.map(s=>
+    `<div class="tstep ${s.status}"><span class="ic">${TI[s.status]}</span>`+
+    `<span>${s.label}${s.detail?` <span class="detail">— ${s.detail}</span>`:""}</span></div>`
+  ).join("");
+  // Surfer rides the wave while the ship is in progress (esp. during verify).
+  const wave=document.getElementById("snWave");
+  const done=j.status==="live"||j.status==="failed";
+  wave.style.display=done?"none":"block";
+  const hasDomain=!!j.registeredDomain;
+  if(!done){
+    document.getElementById("snWaveCap").textContent =
+      j.status==="verify"
+        ? (hasDomain
+            ? "Setting up your domain — this usually takes a few minutes (DNS + SSL certificate). Hang loose 🤙"
+            : "Waiting for the build to finish — usually a minute or two…")
+        : "Shipping…";
+  }
+  const live=document.getElementById("snLive");
+  if(j.status==="live"){
+    live.style.display="";
+    const propNote = hasDomain
+      ? `<div class="propnote">🌊 Heads up: a brand-new domain can take <strong>a few minutes</strong> to fully propagate (DNS + SSL). If it doesn't load right away, wait ~5 min and refresh — or open it in an incognito window.</div>`
+      : "";
+    live.innerHTML=`<div class="liveok">✓ Live</div>`+
+      `<a class="urlbtn" href="${j.liveUrl}" target="_blank">🔗 ${j.liveUrl}</a>`+
+      `<button class="again" onclick="shipAnother()">Ship another</button>`+
+      propNote;
+  }else if(j.status==="failed"){
+    live.style.display="";
+    live.innerHTML=`<div class="livefail">✗ ${j.error||"Failed"}</div>`+
+      `<button class="again" onclick="shipAnother()">Back</button>`;
+  }else{live.style.display="none";}
+}
+function shipAnother(){activeId=null;document.getElementById("snLive").style.display="none";refresh();}
+
+/* ── "You're already live" awareness inside the ship form ───────────── */
+let liveApps=[];
+function renderApps(ships){
+  const byApp={};
+  ships.forEach(j=>{ if(!byApp[j.appName] || j.createdAt>byApp[j.appName].createdAt) byApp[j.appName]=j; });
+  liveApps=Object.values(byApp).filter(j=>j.status==="live" && j.liveUrl);
+  updateBanner();
+}
+function pathAppName(p){
+  const base=(p||"").replace(/\/+$/,"").split("/").pop()||"";
+  return base.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60);
+}
+function updateBanner(){
+  const banner=document.getElementById("formBanner");
+  const name=pathAppName(document.getElementById("shipPath").value);
+  const app=name && liveApps.find(j=>j.appName===name);
+  if(!app){banner.style.display="none";return;}
+  banner.style.display="block";
+  banner.innerHTML = app.registeredDomain
+    ? `✓ This app is already live at <a href="${app.liveUrl}" target="_blank">${app.registeredDomain}</a>. Ship again to redeploy the latest code.`
+    : `You're already live at <a href="${app.liveUrl}" target="_blank">${app.liveUrl}</a>. Pick a domain below and ship to add one — same app, no rebuild. 🏄`;
+}
+
+/* ── Ship form ──────────────────────────────────────────────────────── */
+let domainMode="railway", dbOn=false;
+function selectDom(el){
+  document.querySelectorAll(".domopt").forEach(o=>o.classList.remove("selected"));
+  el.classList.add("selected");
+  domainMode=el.dataset.mode;
+}
+function toggleDb(){dbOn=!dbOn;document.getElementById("swDb").classList.toggle("on",dbOn);}
+function resetAvail(){const m=document.getElementById("availMsg");m.textContent="";m.className="availmsg";}
+function resetSubAvail(){const m=document.getElementById("subAvailMsg");m.textContent="";m.className="availmsg";}
+async function checkSub(ev){
+  ev.stopPropagation();
+  const l=document.getElementById("shipSub").value.trim().toLowerCase();
+  const m=document.getElementById("subAvailMsg");
+  if(!l){m.textContent="Enter a subdomain first.";m.className="availmsg";return;}
+  m.textContent="Checking…";m.className="availmsg";
+  try{
+    const r=await fetch("/api/subdomain/check?label="+encodeURIComponent(l)).then(x=>x.json());
+    if(r.error){m.textContent="✗ "+r.error;m.className="availmsg bad";return;}
+    if(r.available){m.innerHTML="✓ <strong>"+r.host+"</strong> is available";m.className="availmsg ok";}
+    else{m.textContent="✗ "+r.host+" is taken — try another";m.className="availmsg bad";}
+  }catch(e){m.textContent="✗ Check failed.";m.className="availmsg bad";}
+}
+async function checkDomain(ev){
+  ev.stopPropagation();
+  const d=document.getElementById("shipDomain").value.trim();
+  const m=document.getElementById("availMsg");
+  if(!d){m.textContent="Enter a domain first.";m.className="availmsg";return;}
+  m.textContent="Checking…";m.className="availmsg";
+  try{
+    const r=await fetch("/api/domain/check?domain="+encodeURIComponent(d)).then(x=>x.json());
+    if(r.error){m.textContent="✗ "+r.error;m.className="availmsg bad";return;}
+    if(r.available){m.innerHTML="✓ <strong>"+d+"</strong> is available"+(r.price?(" — "+r.price):"");m.className="availmsg ok";}
+    else{m.textContent="✗ "+d+" is taken";m.className="availmsg bad";}
+  }catch(e){m.textContent="✗ Check failed.";m.className="availmsg bad";}
+}
+async function doShip(){
+  const err=document.getElementById("shipErr");err.textContent="";
+  const localPath=document.getElementById("shipPath").value.trim();
+  if(!localPath){err.textContent="Enter your project folder path.";return;}
+  const body={localPath, provisionDb:dbOn};
+  if(domainMode==="subdomain"){
+    const s=document.getElementById("shipSub").value.trim();
+    if(!s){err.textContent="Enter a subdomain label.";return;}
+    body.subdomain=s;
+  }
+  if(domainMode==="domain"){
+    const d=document.getElementById("shipDomain").value.trim();
+    if(!d){err.textContent="Enter your domain.";return;}
+    body.domain=d;
+  }
+  try{localStorage.setItem("ssPath",localPath);}catch(e){}
+  const btn=document.getElementById("shipBtn");btn.disabled=true;btn.textContent="Shipping…";
+  try{
+    const r=await fetch("/api/ship",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const j=await r.json();
+    if(r.status===402||j.needsLicense){
+      err.innerHTML=`You need a ShipSurfer license to ship ($99). <a href="${j.buyUrl||'#'}" target="_blank" style="color:var(--accent);font-weight:600">Get ShipSurfer →</a> then reload.`;
+    } else if(!r.ok){err.textContent=j.error||"Ship failed.";}
+    else if(j.id)activeId=j.id;   // hand over to the live progress panel
+  }catch(e){err.textContent="Could not reach the server.";}
+  btn.disabled=false;btn.textContent="🏄 Ship it";
+  refresh();
+}
+try{const p=localStorage.getItem("ssPath");if(p)document.getElementById("shipPath").value=p;}catch(e){}
+
+refresh();setInterval(refresh,2000);
+</script>
+</body>
+</html>

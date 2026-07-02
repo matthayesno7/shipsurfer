@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ShipSurfer — Wizard prototype</title>
+<style>
+  :root {
+    --bg:#0b0e14; --panel:#131823; --panel2:#0d1119; --line:#242b3a;
+    --text:#e6e9f0; --muted:#8a93a6; --accent:#6ee7b7; --accent2:#60a5fa;
+    --bad:#f87171; --warn:#fbbf24;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:radial-gradient(1200px 600px at 50% -10%, #16203a 0%, var(--bg) 55%);
+    color:var(--text); min-height:100vh;
+    font:15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width:680px; margin:0 auto; padding:28px 22px 60px; }
+  .top { display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+  .logo { font-size:20px; font-weight:800; letter-spacing:-0.5px; }
+  .top .ctx { margin-left:auto; font-size:12px; color:var(--muted);
+    border:1px solid var(--line); padding:4px 10px; border-radius:999px; }
+
+  /* Step rail */
+  .rail { display:flex; gap:6px; margin-bottom:24px; }
+  .rail .seg { flex:1; height:4px; border-radius:3px; background:var(--line); transition:.3s; }
+  .rail .seg.on { background:var(--accent2); }
+  .rail .seg.done { background:var(--accent); }
+
+  .card { background:var(--panel); border:1px solid var(--line);
+    border-radius:16px; padding:26px; box-shadow:0 20px 60px -30px #000; }
+  h1 { font-size:22px; margin:0 0 6px; letter-spacing:-0.4px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin:0 0 16px; }
+  p.sub { color:var(--muted); margin:0 0 22px; }
+
+  .field { margin-bottom:16px; }
+  label.lbl { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+  input[type=text] {
+    width:100%; background:var(--panel2); border:1px solid var(--line); color:var(--text);
+    border-radius:10px; padding:11px 13px; font-size:15px; outline:none;
+  }
+  input[type=text]:focus { border-color:var(--accent2); }
+
+  .btn { background:var(--accent2); color:#06101f; border:none; cursor:pointer;
+    font-weight:700; font-size:15px; padding:12px 20px; border-radius:11px; transition:.15s; }
+  .btn:hover { filter:brightness(1.08); }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .btn.ghost { background:transparent; color:var(--text); border:1px solid var(--line); font-weight:600; }
+  .btn.sm { padding:8px 14px; font-size:13px; }
+  .row { display:flex; align-items:center; gap:12px; }
+  .actions { display:flex; gap:12px; margin-top:26px; }
+  .spacer { flex:1; }
+
+  /* Connect cards */
+  .conn { display:flex; align-items:center; gap:14px; padding:14px;
+    border:1px solid var(--line); border-radius:12px; margin-bottom:10px; background:var(--panel2); }
+  .conn .ico { width:38px; height:38px; border-radius:9px; display:grid; place-items:center;
+    font-size:18px; font-weight:800; background:#1b2233; }
+  .conn .meta { flex:1; }
+  .conn .meta .n { font-weight:650; }
+  .conn .meta .d { font-size:12.5px; color:var(--muted); }
+  .conn .req { font-size:11px; color:var(--warn); }
+  .conn.connected { border-color:#1f5f47; }
+  .conn.connected .ico { background:#0f3a2c; }
+  .pill { font-size:12px; color:var(--accent); display:flex; align-items:center; gap:6px; }
+
+  /* toggles */
+  .opt { display:flex; align-items:center; gap:14px; padding:14px; border:1px solid var(--line);
+    border-radius:12px; margin-bottom:12px; background:var(--panel2); }
+  .opt .meta { flex:1; }
+  .opt .meta .n { font-weight:650; }
+  .opt .meta .d { font-size:12.5px; color:var(--muted); }
+  .switch { width:46px; height:26px; border-radius:999px; background:var(--line);
+    position:relative; cursor:pointer; transition:.2s; flex:none; }
+  .switch::after { content:""; position:absolute; top:3px; left:3px; width:20px; height:20px;
+    border-radius:50%; background:#fff; transition:.2s; }
+  .switch.on { background:var(--accent); }
+  .switch.on::after { left:23px; }
+  .reveal { max-height:0; overflow:hidden; transition:.25s; }
+  .reveal.show { max-height:160px; margin-top:10px; }
+  .avail { font-size:13px; margin-top:8px; }
+  .avail.ok { color:var(--accent); }
+
+  /* review */
+  .summary { border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .summary .li { display:flex; gap:12px; padding:13px 15px; border-bottom:1px solid var(--line); }
+  .summary .li:last-child { border-bottom:none; }
+  .summary .li .k { color:var(--muted); width:120px; font-size:13px; flex:none; }
+  .summary .li .v { font-size:14px; }
+  .cost { display:flex; justify-content:space-between; padding:14px 15px; background:var(--panel2);
+    border-top:1px solid var(--line); font-weight:650; }
+  .cost .muted { color:var(--muted); font-weight:400; font-size:12.5px; }
+
+  /* shipping steps */
+  .step { display:flex; align-items:flex-start; gap:13px; padding:13px 0; border-bottom:1px solid var(--line); }
+  .step:last-child { border-bottom:none; }
+  .step .s { width:26px; height:26px; border-radius:50%; border:2px solid var(--line); flex:none;
+    display:grid; place-items:center; font-size:13px; color:var(--muted); transition:.2s; }
+  .step.running .s { border-color:var(--accent2); color:var(--accent2); animation:spin 1s linear infinite; }
+  .step.done .s { border-color:var(--accent); background:var(--accent); color:#06101f; animation:none; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .step .body .t { font-weight:600; }
+  .step.pending .body .t { color:var(--muted); }
+  .step .body .d { font-size:12.5px; color:var(--muted); margin-top:2px; min-height:0; }
+
+  /* success */
+  .done-hero { text-align:center; padding:10px 0 20px; }
+  .done-hero .big { font-size:40px; }
+  .urlbtn { display:inline-flex; align-items:center; gap:8px; background:var(--panel2);
+    border:1px solid #1f5f47; color:var(--accent); padding:12px 18px; border-radius:11px;
+    text-decoration:none; font-weight:650; margin-top:8px; }
+  .hidden { display:none; }
+  .note { font-size:12.5px; color:var(--muted); margin-top:18px; }
+  a.link { color:var(--accent2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="logo">⚓ ShipSurfer</span>
+    <span class="ctx">launched from Claude Code · running locally</span>
+  </div>
+  <div class="rail" id="rail"></div>
+
+  <!-- ───────────── Screen 0: detected ───────────── -->
+  <div class="card screen" data-screen="0">
+    <h1>Your project is ready to ship</h1>
+    <p class="sub">ShipSurfer detected this project from your Claude Code session.</p>
+    <div class="summary" style="margin-bottom:6px">
+      <div class="li"><span class="k">Folder</span><span class="v">~/shipyard-test</span></div>
+      <div class="li"><span class="k">Framework</span><span class="v">Next.js (auto-detected)</span></div>
+      <div class="li"><span class="k">App name</span><span class="v"><input type="text" id="appName" value="my-saas-app" style="max-width:260px"></span></div>
+    </div>
+    <p class="note">We'll use your own GitHub, database, host and domain accounts — connected once, never created for you.</p>
+    <div class="actions">
+      <div class="spacer"></div>
+      <button class="btn" onclick="go(1)">Get started →</button>
+    </div>
+  </div>
+
+  <!-- ───────────── Screen 1: connect ───────────── -->
+  <div class="card screen hidden" data-screen="1">
+    <h1>Connect your accounts</h1>
+    <p class="sub">One click each. ShipSurfer acts on your behalf — it never sees your passwords.</p>
+    <div id="conns"></div>
+    <p class="note">GitHub and Railway are required. Supabase and Cloudflare are only needed if you want a database or a custom domain.</p>
+    <div class="actions">
+      <button class="btn ghost" onclick="go(0)">← Back</button>
+      <div class="spacer"></div>
+      <button class="btn" id="connNext" disabled onclick="go(2)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ───────────── Screen 2: configure ───────────── -->
+  <div class="card screen hidden" data-screen="2">
+    <h1>Configure your deploy</h1>
+    <p class="sub">Choose what to provision. You can change any of this later.</p>
+
+    <div class="opt">
+      <div class="meta">
+        <div class="n">Provision a database</div>
+        <div class="d">Creates a Supabase project; its DATABASE_URL + keys are wired into your app automatically.</div>
+      </div>
+      <div class="switch on" id="sw-db" onclick="toggleDb()"></div>
+    </div>
+
+    <div class="opt" style="flex-wrap:wrap">
+      <div class="meta">
+        <div class="n">Use a custom domain</div>
+        <div class="d">Buy a domain and point it at your app, with HTTPS set up for you.</div>
+      </div>
+      <div class="switch" id="sw-domain" onclick="toggleDomain()"></div>
+      <div class="reveal" id="domainReveal" style="flex-basis:100%">
+        <div class="row">
+          <input type="text" id="domain" placeholder="mysaasapp.com" oninput="resetAvail()">
+          <button class="btn ghost sm" onclick="checkAvail()">Check</button>
+        </div>
+        <div class="avail" id="availMsg"></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" onclick="go(1)">← Back</button>
+      <div class="spacer"></div>
+      <button class="btn" onclick="go(3)">Review →</button>
+    </div>
+  </div>
+
+  <!-- ───────────── Screen 3: review ───────────── -->
+  <div class="card screen hidden" data-screen="3">
+    <h1>Review &amp; ship</h1>
+    <p class="sub">Here's exactly what ShipSurfer will do when you hit ship.</p>
+    <div class="summary" id="reviewList"></div>
+    <div class="summary" style="margin-top:14px">
+      <div class="cost"><span>Estimated cost</span><span id="costVal"></span></div>
+    </div>
+    <p class="note" id="costNote"></p>
+    <div class="actions">
+      <button class="btn ghost" onclick="go(2)">← Back</button>
+      <div class="spacer"></div>
+      <button class="btn" onclick="startShip()">🚀 Ship it</button>
+    </div>
+  </div>
+
+  <!-- ───────────── Screen 4: shipping ───────────── -->
+  <div class="card screen hidden" data-screen="4">
+    <h1 id="shipTitle">Shipping…</h1>
+    <p class="sub">Provisioning everything. This usually takes a couple of minutes for real.</p>
+    <div id="steps"></div>
+  </div>
+
+  <!-- ───────────── Screen 5: done ───────────── -->
+  <div class="card screen hidden" data-screen="5">
+    <div class="done-hero">
+      <div class="big">🎉</div>
+      <h1>Your app is live</h1>
+      <a class="urlbtn" id="liveUrl" href="#" target="_blank">🔗 <span></span></a>
+    </div>
+    <div class="summary" id="doneSummary"></div>
+    <p class="note">In Claude Code you'd see this same result inline, with the live link.</p>
+    <div class="actions">
+      <button class="btn ghost" onclick="restart()">Ship another</button>
+      <div class="spacer"></div>
+      <button class="btn" onclick="window.close && window.close()">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Prototype state (all simulated client-side) ───────────────────────── */
+const PROVIDERS = [
+  { id:"github",     icon:"GH", name:"GitHub",     desc:"Create the repo and push your code", required:true,  acct:"@matt" },
+  { id:"railway",    icon:"RW", name:"Railway",    desc:"Host and deploy your app",           required:true,  acct:"matt's workspace" },
+  { id:"supabase",   icon:"SB", name:"Supabase",   desc:"Provision your Postgres database",   required:false, acct:"matt's org" },
+  { id:"cloudflare", icon:"CF", name:"Cloudflare", desc:"Buy the domain and point DNS",       required:false, acct:"matt@…" },
+];
+const state = {
+  screen:0,
+  connected:{},
+  useDb:true,
+  useDomain:false,
+  domainOk:false,
+};
+const TOTAL = 6;
+
+/* ── Navigation + rail ─────────────────────────────────────────────────── */
+function renderRail() {
+  const rail = document.getElementById("rail");
+  rail.innerHTML = "";
+  for (let i=0;i<TOTAL;i++){
+    const seg=document.createElement("div");
+    seg.className="seg"+(i<state.screen?" done":i===state.screen?" on":"");
+    rail.appendChild(seg);
+  }
+}
+function go(n){
+  state.screen=n;
+  document.querySelectorAll(".screen").forEach(s=>{
+    s.classList.toggle("hidden", +s.dataset.screen!==n);
+  });
+  if(n===3) renderReview();
+  renderRail();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ── Connect screen ────────────────────────────────────────────────────── */
+function renderConns(){
+  const box=document.getElementById("conns");
+  box.innerHTML="";
+  PROVIDERS.forEach(p=>{
+    const on=state.connected[p.id];
+    const el=document.createElement("div");
+    el.className="conn"+(on?" connected":"");
+    el.innerHTML=`
+      <div class="ico">${p.icon}</div>
+      <div class="meta">
+        <div class="n">${p.name} ${p.required?'<span class="req">· required</span>':'<span class="d">· optional</span>'}</div>
+        <div class="d">${p.desc}</div>
+      </div>
+      ${ on
+         ? `<div class="pill">✓ ${p.acct}</div>`
+         : `<button class="btn sm" onclick="connect('${p.id}')">Connect</button>` }
+    `;
+    box.appendChild(el);
+  });
+  const ready = PROVIDERS.filter(p=>p.required).every(p=>state.connected[p.id]);
+  document.getElementById("connNext").disabled=!ready;
+}
+function connect(id){
+  const p=PROVIDERS.find(x=>x.id===id);
+  const btns=[...document.querySelectorAll("#conns button")];
+  event.target.textContent="Connecting…"; event.target.disabled=true;
+  // Simulate the OAuth round-trip.
+  setTimeout(()=>{ state.connected[id]=true; renderConns(); }, 750);
+}
+
+/* ── Configure screen ──────────────────────────────────────────────────── */
+function toggleDb(){
+  state.useDb=!state.useDb;
+  document.getElementById("sw-db").classList.toggle("on",state.useDb);
+}
+function toggleDomain(){
+  state.useDomain=!state.useDomain;
+  document.getElementById("sw-domain").classList.toggle("on",state.useDomain);
+  document.getElementById("domainReveal").classList.toggle("show",state.useDomain);
+}
+function resetAvail(){ state.domainOk=false; document.getElementById("availMsg").textContent=""; }
+function checkAvail(){
+  const d=document.getElementById("domain").value.trim();
+  const msg=document.getElementById("availMsg");
+  if(!d){ msg.textContent="Enter a domain first."; msg.className="avail"; return; }
+  msg.textContent="Checking…"; msg.className="avail";
+  setTimeout(()=>{
+    state.domainOk=true;
+    msg.innerHTML=`✓ ${d} is available — $10.44/yr`;
+    msg.className="avail ok";
+  },650);
+}
+
+/* ── Review screen ─────────────────────────────────────────────────────── */
+function plannedSteps(){
+  const name=document.getElementById("appName").value||"my-app";
+  const steps=[
+    {k:"Repository", v:`github.com/matt/${name}`},
+    state.useDb ? {k:"Database", v:"New Supabase project + DATABASE_URL wired in"} : null,
+    {k:"Host", v:"New Railway service, deployed from the repo"},
+    state.useDomain && state.domainOk ? {k:"Domain", v:`${document.getElementById("domain").value} (bought + DNS + HTTPS)`} : null,
+    {k:"Verify", v:"Health-check the live URL"},
+  ].filter(Boolean);
+  return steps;
+}
+function renderReview(){
+  const list=document.getElementById("reviewList");
+  list.innerHTML=plannedSteps().map(s=>`<div class="li"><span class="k">${s.k}</span><span class="v">${s.v}</span></div>`).join("");
+  const buyingDomain = state.useDomain && state.domainOk;
+  document.getElementById("costVal").textContent = buyingDomain ? "$10.44 / yr" : "$0 today";
+  document.getElementById("costNote").innerHTML = buyingDomain
+    ? "Just the domain. Your GitHub, Supabase and Railway usage is billed to your own accounts (free tiers cover small apps)."
+    : "Everything runs on your own accounts' free tiers. Add a custom domain for $10.44/yr.";
+}
+
+/* ── Shipping screen ───────────────────────────────────────────────────── */
+function shipSteps(){
+  const name=document.getElementById("appName").value||"my-app";
+  const ref="sim"+Math.random().toString(16).slice(2,12);
+  const dom=document.getElementById("domain").value;
+  const target=(dom||"").replace(/\./g,"-")+".up.railway.app";
+  return [
+    {t:"Create repo & push code", d:`dry-run-user/${name}`},
+    state.useDb ? {t:"Provision Supabase database", d:`${ref} · DATABASE_URL + keys wired into deploy`} : null,
+    {t:"Deploy to Railway", d:`https://${name}-production.up.railway.app · ${state.useDb?5:1} env vars`},
+    (state.useDomain&&state.domainOk) ? {t:"Register domain & point DNS", d:`${dom} ($10.44/yr) · CNAME ${dom} → ${target}`} : null,
+    {t:"Verify live URL", d:"200 OK"},
+  ].filter(Boolean);
+}
+function startShip(){
+  go(4);
+  const steps=shipSteps();
+  const box=document.getElementById("steps");
+  box.innerHTML=steps.map((s,i)=>`
+    <div class="step pending" id="st-${i}">
+      <div class="s">${i+1}</div>
+      <div class="body"><div class="t">${s.t}</div><div class="d" id="sd-${i}"></div></div>
+    </div>`).join("");
+  let i=0;
+  const run=()=>{
+    if(i>=steps.length){ finish(steps); return; }
+    const el=document.getElementById("st-"+i);
+    el.className="step running";
+    setTimeout(()=>{
+      el.className="step done";
+      el.querySelector(".s").textContent="✓";
+      document.getElementById("sd-"+i).textContent="— "+steps[i].d;
+      i++; run();
+    }, 850);
+  };
+  run();
+}
+function finish(steps){
+  document.getElementById("shipTitle").textContent="Done";
+  const name=document.getElementById("appName").value||"my-app";
+  const dom=document.getElementById("domain").value;
+  const live=(state.useDomain&&state.domainOk)?`https://${dom}`:`https://${name}-production.up.railway.app`;
+  setTimeout(()=>{
+    const u=document.getElementById("liveUrl");
+    u.href=live; u.querySelector("span").textContent=live;
+    document.getElementById("doneSummary").innerHTML=
+      `<div class="li"><span class="k">Repository</span><span class="v">github.com/matt/${name}</span></div>`+
+      (state.useDb?`<div class="li"><span class="k">Database</span><span class="v">Supabase · live</span></div>`:"")+
+      `<div class="li"><span class="k">Host</span><span class="v">Railway · live</span></div>`+
+      ((state.useDomain&&state.domainOk)?`<div class="li"><span class="k">Domain</span><span class="v">${dom} · HTTPS active</span></div>`:"");
+    go(5);
+  }, 600);
+}
+function restart(){
+  state.screen=0; state.connected={}; state.useDb=true; state.useDomain=false; state.domainOk=false;
+  document.getElementById("sw-db").classList.add("on");
+  document.getElementById("sw-domain").classList.remove("on");
+  document.getElementById("domainReveal").classList.remove("show");
+  document.getElementById("availMsg").textContent="";
+  renderConns(); go(0);
+}
+
+/* init */
+renderConns(); renderRail(); go(0);
+</script>
+</body>
+</html>

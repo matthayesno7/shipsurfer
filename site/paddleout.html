@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Paddle out — the ShipSurfer beta guide</title>
+<meta name="description" content="How to install ShipSurfer and ship your first Claude Code app in the beta." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F1E8; --ink:#23201A; --muted:#6E695D; --surface:#FFFFFF;
+    --border:#E6E0D2; --hair:#EFEADD; --accent:#1B6B52; --accent-soft:rgba(27,107,82,.10);
+    --shadow:0 30px 60px -38px rgba(35,32,26,.28), 0 2px 6px rgba(35,32,26,.04);
+  }
+  [data-theme="dark"]{
+    --bg:#16140F; --ink:#F3EFE5; --muted:#A39C8C; --surface:#1F1C16;
+    --border:#332E25; --hair:#2A261E; --accent:#46B891; --accent-soft:rgba(70,184,145,.14);
+    --shadow:0 30px 60px -34px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.3);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--ink);min-height:100vh;padding:56px 40px;
+    font-family:'Schibsted Grotesk',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;transition:background .25s,color .25s;}
+  ::selection{background:rgba(27,107,82,.18);}
+  .frame{width:100%;max-width:720px;margin:0 auto;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 4px;}
+  .brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink);}
+  .brand b{font-size:18px;font-weight:600;letter-spacing:-.01em;}
+  .moon{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);display:inline-flex;
+    align-items:center;justify-content:center;color:var(--muted);font-size:15px;cursor:pointer;background:transparent;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:22px;
+    padding:44px 48px;box-shadow:var(--shadow);margin-top:26px;}
+  .kicker{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:.04em;text-transform:uppercase;}
+  h1{font-weight:700;font-size:32px;line-height:1.12;letter-spacing:-.025em;margin:10px 0 0;}
+  .lead{font-size:17px;line-height:1.6;color:var(--muted);margin:16px 0 0;}
+  h2{font-size:15px;font-weight:600;letter-spacing:.02em;margin:34px 0 12px;display:flex;align-items:center;gap:10px;}
+  .num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;
+    display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:'JetBrains Mono',monospace;}
+  p{font-size:15.5px;line-height:1.7;color:var(--ink);}
+  p.dim{color:var(--muted);}
+  ul{margin:10px 0 0 4px;list-style:none;display:grid;gap:9px;}
+  li{font-size:15.5px;line-height:1.5;display:flex;gap:10px;}
+  li .c{color:var(--accent);font-weight:700;}
+  code{font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--accent-soft);
+    border:1px solid var(--border);border-radius:6px;padding:2px 7px;}
+  pre{font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--bg);border:1px solid var(--border);
+    border-radius:11px;padding:14px 16px;margin:12px 0 0;overflow-x:auto;line-height:1.5;}
+  .hr{height:1px;background:var(--hair);margin:30px 0;}
+  .foot{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin:22px 4px 0;text-align:center;}
+  .foot a{color:var(--accent);text-decoration:none;}
+  a.back{color:var(--accent);text-decoration:none;font-weight:600;font-size:15px;}
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="topbar">
+      <a class="brand" href="/"><span style="font-size:20px;line-height:1">🏄</span><b>ShipSurfer</b></a>
+      <button class="moon" id="themeBtn" onclick="toggleTheme()" title="Toggle light / dark">☾</button>
+    </div>
+
+    <div class="card">
+      <div class="kicker">Beta guide</div>
+      <h1>Paddle out 🏄</h1>
+      <p class="lead">ShipSurfer takes an app you built with Claude and gets it <b>live</b> — GitHub repo,
+        database, hosting and a domain — on your <b>own</b> accounts, without touching a terminal.
+        During the beta it's free.</p>
+
+      <h2><span class="num">✓</span> What you need</h2>
+      <ul>
+        <li><span class="c">→</span><span><b>Node.js 18+</b> — <a href="https://nodejs.org" style="color:var(--accent)">nodejs.org</a></span></li>
+        <li><span class="c">→</span><span>A <b>Claude Code</b> setup on your Mac</span></li>
+        <li><span class="c">→</span><span>Accounts you connect once: <b>GitHub</b>, <b>Railway</b>, <b>Supabase</b> (free tiers are fine)</span></li>
+      </ul>
+
+      <h2><span class="num">1</span> Install (one line)</h2>
+      <pre>curl -fsSL https://raw.githubusercontent.com/matthayesno7/shipsurfer/main/install.sh | bash</pre>
+      <p class="dim">Installs ShipSurfer and the Claude Code skill. Then drop the <code>.env</code> file we sent you into <code>~/.shipsurfer/app/.env</code>.</p>
+
+      <h2><span class="num">2</span> Start ShipSurfer</h2>
+      <pre>~/.shipsurfer/shipsurfer</pre>
+      <p class="dim">Leave it running. It lives at <code>http://localhost:4001</code>.</p>
+
+      <h2><span class="num">3</span> Ship your app</h2>
+      <ul>
+        <li><span class="c">1.</span><span>Open your project in <b>Claude Code</b> (the folder with your app).</span></li>
+        <li><span class="c">2.</span><span>Say: <b>"ship this with ShipSurfer."</b></span></li>
+        <li><span class="c">3.</span><span>ShipSurfer opens in your browser. First time only: <b>get your license</b> (use test card <code>4242 4242 4242 4242</code> or your discount code — no real charge), then <b>connect</b> GitHub, Railway &amp; Supabase.</span></li>
+        <li><span class="c">4.</span><span>Pick a domain option and hit <b>Ship</b>. Watch the surfer — you'll get a live URL in a few minutes.</span></li>
+      </ul>
+      <p class="dim" style="margin-top:12px">Returning? Skip straight to shipping — your license and connections are remembered.</p>
+
+      <div class="hr"></div>
+
+      <h2 style="margin-top:0"><span class="num">🌊</span> Domain options</h2>
+      <ul>
+        <li><span class="c">→</span><span><b>Railway URL</b> — instant, free (<code>your-app.up.railway.app</code>)</span></li>
+        <li><span class="c">→</span><span><b>Free <code>you.shipsurfer.app</code> subdomain</b> — clean, free, HTTPS</span></li>
+        <li><span class="c">→</span><span><b>Buy your own domain</b> — search and register right in the app</span></li>
+      </ul>
+
+      <div class="hr"></div>
+      <p><b>Hit a snag?</b> Whatever error the app shows is specific — send it to us verbatim and we'll sort it. Feedback of any kind is hugely welcome.</p>
+      <p style="margin-top:18px"><a class="back" href="/">← Back to home</a></p>
+    </div>
+
+    <p class="foot">ShipSurfer · runs on your machine, never ours · <a href="mailto:matthayesno7@gmail.com">get in touch</a></p>
+  </div>
+
+<script>
+function toggleTheme(){
+  const dark=document.documentElement.getAttribute("data-theme")==="dark";
+  document.documentElement.setAttribute("data-theme",dark?"":"dark");
+  document.getElementById("themeBtn").textContent=dark?"☾":"☀";
+}
+</script>
+</body>
+</html>
