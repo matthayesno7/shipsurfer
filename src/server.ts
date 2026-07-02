@@ -36,7 +36,7 @@ app.use(express.json({ limit: "2mb" }));
 const DASH = [
   path.resolve(__dirname, "../dashboard"),      // ts-node: src → root/dashboard
   path.resolve(__dirname, "../../dashboard"),   // dist: dist/src → root/dashboard
-].find((d) => fs.existsSync(path.join(d, "home.html"))) || path.resolve(__dirname, "../dashboard");
+].find((d) => fs.existsSync(path.join(d, "index.html"))) || path.resolve(__dirname, "../dashboard");
 app.use(express.static(DASH, { index: false }));
 
 // The app opens straight to the tool (/surfing). The marketing/sales page lives
