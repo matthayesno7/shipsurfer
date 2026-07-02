@@ -75,22 +75,28 @@
         <li><span class="c">→</span><span>Accounts you connect once: <b>GitHub</b>, <b>Railway</b>, <b>Supabase</b> (free tiers are fine)</span></li>
       </ul>
 
-      <h2><span class="num">1</span> Install (one line)</h2>
+      <div style="background:var(--accent-soft);border:1px solid var(--border);border-radius:12px;padding:15px 17px;margin:8px 0 4px;font-size:14.5px;line-height:1.65;">
+        <b>New here? How to run the command below.</b><br>
+        The grey box is a command. The easy way: paste it into <b>Claude Code</b> and say
+        <i>"run this for me."</i> Prefer to do it yourself? Open the <b>Terminal</b> app
+        (press <code>⌘ + Space</code>, type <i>Terminal</i>, hit Enter), paste it, and press Enter.
+      </div>
+
+      <h2><span class="num">1</span> Install ShipSurfer — one time</h2>
       <pre>curl -fsSL https://raw.githubusercontent.com/matthayesno7/shipsurfer/main/install.sh | bash</pre>
-      <p class="dim">Installs ShipSurfer and the Claude Code skill. Then drop the <code>.env</code> file we sent you into <code>~/.shipsurfer/app/.env</code>.</p>
+      <p class="dim">Run that once (in Claude Code or Terminal). It sets ShipSurfer up on your Mac.
+        Then take the <code>.env</code> file we emailed you and put it in the
+        <code>~/.shipsurfer/app</code> folder — or simplest, ask Claude Code:
+        <i>"move the .env file I was sent into ~/.shipsurfer/app."</i></p>
 
-      <h2><span class="num">2</span> Start ShipSurfer</h2>
-      <pre>~/.shipsurfer/shipsurfer</pre>
-      <p class="dim">Leave it running. It lives at <code>http://localhost:4001</code>.</p>
-
-      <h2><span class="num">3</span> Ship your app</h2>
+      <h2><span class="num">2</span> Ship your app</h2>
       <ul>
-        <li><span class="c">1.</span><span>Open your project in <b>Claude Code</b> (the folder with your app).</span></li>
-        <li><span class="c">2.</span><span>Say: <b>"ship this with ShipSurfer."</b></span></li>
-        <li><span class="c">3.</span><span>ShipSurfer opens in your browser. First time only: <b>get your license</b> (use test card <code>4242 4242 4242 4242</code> or your discount code — no real charge), then <b>connect</b> GitHub, Railway &amp; Supabase.</span></li>
+        <li><span class="c">1.</span><span>In <b>Claude Code</b>, open your project (the folder with your app).</span></li>
+        <li><span class="c">2.</span><span>Type: <b>"ship this with ShipSurfer."</b> ShipSurfer starts up and opens in your browser automatically.</span></li>
+        <li><span class="c">3.</span><span>First time only: <b>get your license</b> (use test card <code>4242 4242 4242 4242</code>, any future date + any 3 digits — no real charge), then <b>connect</b> GitHub, Railway &amp; Supabase by clicking through.</span></li>
         <li><span class="c">4.</span><span>Pick a domain option and hit <b>Ship</b>. Watch the surfer — you'll get a live URL in a few minutes.</span></li>
       </ul>
-      <p class="dim" style="margin-top:12px">Returning? Skip straight to shipping — your license and connections are remembered.</p>
+      <p class="dim" style="margin-top:12px">Coming back later? Just say "ship this with ShipSurfer" again — your license and connections are remembered.</p>
 
       <div class="hr"></div>
 

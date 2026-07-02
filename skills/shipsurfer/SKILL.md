@@ -11,7 +11,7 @@ run deploys from the terminal — the app does that.
 
 ## Config
 - App URL: `http://localhost:4001` (override with `$SHIPSURFER_SERVER`)
-- App folder: `/Users/matt/Documents/Claude/Projects/New business/shipyard`
+- App folder: `$HOME/.shipsurfer/app` (where the one-line installer puts it)
 
 ## Steps
 
@@ -20,11 +20,14 @@ run deploys from the terminal — the app does that.
 curl -s http://localhost:4001/api/status >/dev/null 2>&1 && echo up || echo down
 ```
 - `up` → continue.
-- `down` → start it (background, don't block the chat), then wait a moment:
+- `down` → start it for the user (background, don't block the chat), then wait a few
+  seconds and re-check:
   ```bash
-  cd "/Users/matt/Documents/Claude/Projects/New business/shipyard"
-  npm run dev >/tmp/shipsurfer.log 2>&1 &
+  cd "$HOME/.shipsurfer/app" && npm start >/tmp/shipsurfer.log 2>&1 &
+  sleep 4 && curl -s http://localhost:4001/api/status >/dev/null 2>&1 && echo up || echo "still starting"
   ```
+  If the folder doesn't exist, the user hasn't installed ShipSurfer yet — point them to
+  the one-line installer at https://shipsurfer.app/paddleout.
 
 ### 2. Open the app
 Open the ShipSurfer home page in the user's browser:
