@@ -69,14 +69,24 @@
     }
   }catch(e){}
 })();
+// If the local app sent us here, it appends ?return=http://localhost:PORT/activate
+// so we can hand the key straight back and auto-activate (no terminal).
+function returnUrl(){
+  const r=new URLSearchParams(location.search).get("return");
+  try{ const u=new URL(r); if(u.hostname==="localhost"||u.hostname==="127.0.0.1") return r; }catch(e){}
+  return null;
+}
 async function pay(){
   const b=document.getElementById("payBtn");const orig=b.textContent;b.textContent="Processing…";b.disabled=true;
   const email=document.getElementById("email").value.trim();
+  const ret=returnUrl();
   try{
-    const r=await fetch("/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+    const r=await fetch("/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,return:ret})});
     const j=await r.json();
-    if(j.url){location.href=j.url;return;} // real Stripe mode
+    if(j.url){location.href=j.url;return;} // real Stripe mode → success page handles return
     if(j.key){
+      // free-beta / simulate: got the key immediately.
+      if(ret){ location.href = ret + (ret.includes("?")?"&":"?") + "key=" + encodeURIComponent(j.key); return; }
       document.getElementById("buy").style.display="none";
       document.getElementById("done").style.display="block";
       document.getElementById("key").textContent=j.key;

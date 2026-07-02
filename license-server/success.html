@@ -53,7 +53,17 @@
   const err = document.getElementById("err");
   let tries = 0;
 
+  // If we were opened from the local app, bounce the key straight back so it
+  // auto-activates there — no terminal step for the user.
+  function returnUrl(){
+    const r = params.get("return");
+    try{ const u=new URL(r); if(u.hostname==="localhost"||u.hostname==="127.0.0.1") return r; }catch(e){}
+    return null;
+  }
+
   function show(key){
+    const ret = returnUrl();
+    if(ret){ location.href = ret + (ret.includes("?")?"&":"?") + "key=" + encodeURIComponent(key); return; }
     document.getElementById("wait").style.display="none";
     document.getElementById("done").style.display="block";
     document.getElementById("key").textContent = key;

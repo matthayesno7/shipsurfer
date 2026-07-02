@@ -117,12 +117,14 @@ app.post("/checkout", async (req, res) => {
     return res.json({ simulate: true, key, message: "SIMULATE mode — here's your key (no charge)." });
   }
   try {
+    // Optional return URL (the local app's /activate) to bounce the key back to.
+    const ret = req.body?.return ? `&return=${encodeURIComponent(req.body.return)}` : "";
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
       customer_email: email || undefined,
       allow_promotion_codes: true,
-      success_url: `${PUBLIC_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${PUBLIC_URL}/success?session_id={CHECKOUT_SESSION_ID}${ret}`,
       cancel_url: `${PUBLIC_URL}/buy`,
     });
     res.json({ url: session.url });

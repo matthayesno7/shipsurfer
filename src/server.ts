@@ -15,7 +15,7 @@ import {
   getAppState,
 } from "./store";
 import { newJob, runJob } from "./provision/engine";
-import { ensureLicensed, BUY_URL } from "./license";
+import { ensureLicensed, BUY_URL, saveKey } from "./license";
 import * as githubOAuth from "./oauth/github";
 import * as railwayOAuth from "./oauth/railway";
 import * as supabaseOAuth from "./oauth/supabase";
@@ -44,6 +44,16 @@ app.get("/", (_req, res) => res.redirect("/home"));
 app.get("/home", (_req, res) => res.sendFile(path.join(DASH, "home.html")));
 app.get("/buy", (_req, res) => res.sendFile(path.join(DASH, "onboarding.html")));
 app.get("/surfing", (_req, res) => res.sendFile(path.join(DASH, "index.html")));
+
+// After paying on the hosted buy page, the browser lands here with the key —
+// we save it locally so the user is instantly licensed (no terminal step).
+app.get("/activate", (req, res) => {
+  const key = String((req.query.key as string) || "").trim();
+  if (!key) return res.status(400).send("Missing license key. <a href='/surfing'>Back</a>");
+  saveKey(key);
+  log.ok("License activated via browser handoff");
+  res.redirect("/surfing?licensed=1");
+});
 
 
 // ── Chained connect ──────────────────────────────────────────────────────
@@ -180,10 +190,13 @@ app.post("/api/ship", async (req: Request, res: Response) => {
   // honours the SHIPYARD_LICENSE_KEY=dev bypass for development.
   const lic = await ensureLicensed();
   if (!lic.licensed) {
+    // Send the user to the hosted buy page with a return link back to THIS app,
+    // so after paying their key auto-activates here (no terminal needed).
+    const ret = encodeURIComponent(`http://localhost:${config.port}/activate`);
     return res.status(402).json({
       error: "A ShipSurfer license ($99, one-time) is required to ship.",
       needsLicense: true,
-      buyUrl: BUY_URL,
+      buyUrl: `${BUY_URL}?return=${ret}`,
     });
   }
   if (!config.dryRun) {
