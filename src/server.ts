@@ -1,4 +1,5 @@
 import * as path from "path";
+import * as fs from "fs";
 import * as crypto from "crypto";
 import express, { Request, Response } from "express";
 import { z } from "zod";
@@ -29,8 +30,13 @@ const app = express();
 app.use(express.json({ limit: "2mb" }));
 
 // Static assets (html files, fonts) but don't auto-serve index.html at "/",
-// so our named routes below win.
-const DASH = path.resolve(__dirname, "../dashboard");
+// so our named routes below win. The dashboard lives at the project root; when
+// running compiled (dist/src/server.js) it's two levels up, under ts-node
+// (src/server.ts) it's one — pick whichever actually has the files.
+const DASH = [
+  path.resolve(__dirname, "../dashboard"),      // ts-node: src → root/dashboard
+  path.resolve(__dirname, "../../dashboard"),   // dist: dist/src → root/dashboard
+].find((d) => fs.existsSync(path.join(d, "home.html"))) || path.resolve(__dirname, "../dashboard");
 app.use(express.static(DASH, { index: false }));
 
 // Named routes for the flow: home → buy → surfing (connect) → ship.
