@@ -39,9 +39,10 @@ const DASH = [
 ].find((d) => fs.existsSync(path.join(d, "home.html"))) || path.resolve(__dirname, "../dashboard");
 app.use(express.static(DASH, { index: false }));
 
-// Named routes for the flow: home → buy → surfing (connect) → ship.
-app.get("/", (_req, res) => res.redirect("/home"));
-app.get("/home", (_req, res) => res.sendFile(path.join(DASH, "home.html")));
+// The app opens straight to the tool (/surfing). The marketing/sales page lives
+// on the public site (shipsurfer.app), so the local app doesn't need one.
+app.get("/", (_req, res) => res.redirect("/surfing"));
+app.get("/home", (_req, res) => res.redirect("/surfing"));
 // Send buyers to the REAL hosted Stripe checkout (not the old local simulator),
 // with a return link so the key auto-activates back here after payment.
 app.get("/buy", (_req, res) =>

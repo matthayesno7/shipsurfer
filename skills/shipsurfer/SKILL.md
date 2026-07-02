@@ -30,12 +30,12 @@ curl -s http://localhost:4001/api/status >/dev/null 2>&1 && echo up || echo down
   the one-line installer at https://shipsurfer.app/paddleout.
 
 ### 2. Open the app
-Open the ShipSurfer home page in the user's browser:
+Open the ShipSurfer app in the user's browser (goes straight to the ship page):
 ```bash
-open http://localhost:4001/home    # macOS
+open http://localhost:4001/surfing    # macOS
 ```
-Tell the user: *"ShipSurfer's open in your browser. Buy your license, connect your
-accounts, and hit Ship — I'll leave the surfing to you. 🏄"*
+Tell the user: *"ShipSurfer's open in your browser. Connect your accounts (first time
+only), pick how it goes live, and hit Ship — I'll leave the surfing to you. 🏄"*
 
 ### 3. Let the app take over
 The user does everything from here in the UI:
