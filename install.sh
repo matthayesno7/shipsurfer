@@ -38,11 +38,14 @@ npm install --silent
 dim "building…"
 npm run build >/dev/null
 
-# 3. env file
-if [ ! -f "$DIR/.env" ]; then
-  cp "$DIR/.env.example" "$DIR/.env"
-  dim "created .env — add the OAuth credentials we sent you before first run."
+# 3. env file — the template holds no secrets (all connections go through the
+# hosted broker), so keep it in sync with the latest template on every install.
+# Back up any existing file just in case the user customised it.
+if [ -f "$DIR/.env" ] && ! cmp -s "$DIR/.env" "$DIR/.env.example"; then
+  cp "$DIR/.env" "$DIR/.env.bak"
 fi
+cp "$DIR/.env.example" "$DIR/.env"
+dim "wrote .env (no secrets needed — connections go through api.shipsurfer.app)."
 
 # 4. install the Claude Code skill
 mkdir -p "$SKILLS"
