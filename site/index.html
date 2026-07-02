@@ -146,15 +146,24 @@
     document.getElementById("joinBtn").style.display="none";
     document.getElementById("email").focus();
   }
-  function submitSignup(e){
+  async function submitSignup(e){
     e.preventDefault();
     const email=document.getElementById("email").value.trim();
     if(!email) return false;
-    // No backend needed: open a pre-filled email to the ShipSurfer inbox.
-    const subject=encodeURIComponent("ShipSurfer beta — invite request");
-    const body=encodeURIComponent("I'd like to join the ShipSurfer beta.\n\nEmail: "+email);
-    window.location.href="mailto:matthayesno7@gmail.com?subject="+subject+"&body="+body;
-    document.getElementById("thanks").classList.add("show");
+    const btn=e.target.querySelector('button[type=submit]');
+    const orig=btn.textContent; btn.textContent="…"; btn.disabled=true;
+    try{
+      const r=await fetch("https://api.shipsurfer.app/beta-signup",{
+        method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})
+      });
+      if(!r.ok) throw new Error();
+      document.getElementById("signup").querySelector(".row").style.display="none";
+      document.querySelector("#signup label").style.display="none";
+      document.getElementById("thanks").classList.add("show");
+    }catch(err){
+      btn.textContent=orig; btn.disabled=false;
+      alert("Couldn't sign up just now — please email matthayesno7@gmail.com.");
+    }
     return false;
   }
 </script>

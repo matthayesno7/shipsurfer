@@ -31,6 +31,14 @@ const STORE =
     ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "licenses.json")
     : path.join(__dirname, ".licenses.json"));
 console.log(`[license] store: ${STORE}`);
+
+// Beta signups store (same volume so they persist across redeploys).
+const SIGNUPS =
+  process.env.SIGNUPS_STORE ||
+  (process.env.RAILWAY_VOLUME_MOUNT_PATH
+    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "signups.json")
+    : path.join(__dirname, ".signups.json"));
+const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || "matthayesno7@gmail.com";
 // The server's own public base URL — used to build Stripe success/cancel links
 // back to our own pages. Set to your real domain in production.
 const PUBLIC_URL = (process.env.PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/$/, "");
@@ -115,6 +123,52 @@ app.get("/success", (_req, res) => res.sendFile(path.join(__dirname, "success.ht
 
 app.get("/health", (_req, res) =>
   res.json({ ok: true, simulate: SIMULATE, freeBeta: FREE_BETA, stripe: !!stripe }));
+
+/* ── Beta signups ──────────────────────────────────────────────────────────
+ * The static marketing site posts emails here. We store them (on the volume)
+ * and email a notification if RESEND_API_KEY is set. */
+const readSignups = () => (fs.existsSync(SIGNUPS) ? JSON.parse(fs.readFileSync(SIGNUPS, "utf8")) : []);
+const writeSignups = (d) => fs.writeFileSync(SIGNUPS, JSON.stringify(d, null, 2));
+
+function cors(res) {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+}
+app.options("/beta-signup", (_req, res) => { cors(res); res.sendStatus(204); });
+
+app.post("/beta-signup", async (req, res) => {
+  cors(res);
+  const email = String((req.body || {}).email || "").trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ error: "invalid email" });
+  const list = readSignups();
+  if (!list.some((s) => s.email === email)) {
+    list.push({ email, at: new Date().toISOString(), ref: req.get("referer") || null });
+    writeSignups(list);
+    console.log(`[beta] signup: ${email} (total ${list.length})`);
+    // Fire-and-forget email notification via Resend (optional).
+    if (process.env.RESEND_API_KEY) {
+      fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM || "ShipSurfer <onboarding@resend.dev>",
+          to: [NOTIFY_EMAIL],
+          subject: `🏄 New ShipSurfer beta signup: ${email}`,
+          text: `${email} joined the ShipSurfer beta.\n\nTotal signups: ${list.length}`,
+        }),
+      }).catch((e) => console.log(`[beta] email notify failed: ${e.message}`));
+    }
+  }
+  res.json({ ok: true });
+});
+
+// Simple protected list to review signups (set ADMIN_TOKEN to enable).
+app.get("/beta-signups", (req, res) => {
+  if (!process.env.ADMIN_TOKEN || req.query.token !== process.env.ADMIN_TOKEN)
+    return res.status(403).json({ error: "forbidden" });
+  res.json(readSignups());
+});
 
 /* Create a checkout.
  * - FREE_BETA / local SIMULATE: mint a key instantly (no Stripe).
