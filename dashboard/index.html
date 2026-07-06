@@ -161,16 +161,9 @@
 
   <!-- Connect -->
   <div class="card">
-    <h1>Connect your accounts</h1>
+    <h1>1 · Connect your apps</h1>
     <p class="sub">One step. You'll approve each on its own site, then you're set — every
       future ship is quick, no reconnecting.</p>
-
-    <h2>License</h2>
-    <div class="conn">
-      <span class="dot" id="dot-license"></span>
-      <span class="name">ShipSurfer license</span>
-      <span class="state" id="state-license">checking…</span>
-    </div>
 
     <h2>Connections</h2>
     <div class="conn">
@@ -191,7 +184,8 @@
 
     <p class="sub" style="margin-top:10px;">Other hosting &amp; database services coming soon — tell us which you use and we'll prioritise it.</p>
 
-    <a class="cta" id="connectBtn" href="/connect/all">Connect accounts →</a>
+    <a class="cta" id="connectBtn" href="/connect/all" target="_blank">Connect accounts →</a>
+    <p class="sub" style="margin-top:10px;font-size:13px;">If a provider page says “return to the app” and nothing happens, just switch back to this tab — we'll finish the connection automatically.</p>
     <div class="allset" id="allset" style="display:none">✓ All connected — ready to ship.</div>
   </div>
 
@@ -211,15 +205,14 @@
 
   <!-- Ship -->
   <div class="card" id="shipForm">
-    <h1>Ship your app</h1>
-    <p class="sub">Point us at your project folder, choose how it goes live, and ship.</p>
+    <h1>2 · Choose how it goes live</h1>
+    <p class="sub" id="shipProj">Open your project in Claude Code and say “ship this with ShipSurfer”.</p>
     <div id="formBanner" class="formbanner" style="display:none"></div>
 
-    <div class="field">
-      <label>Project folder <span style="opacity:.7">(only needed here — in Claude it's automatic)</span></label>
+    <div class="field" id="pathField" style="display:none">
+      <label>Project folder</label>
       <input id="shipPath" placeholder="/Users/you/my-project" oninput="updateBanner()">
     </div>
-    <h2 style="margin-top:20px">How it goes live</h2>
     <div class="domopt selected" data-mode="railway" onclick="selectDom(this)">
       <span class="radio"></span>
       <div><div class="t">Railway URL <span style="color:var(--muted);font-weight:400">· free, instant</span></div>
@@ -245,7 +238,7 @@
         <div class="availmsg" id="availMsg"></div></div>
     </div>
 
-    <button class="cta" id="shipBtn" onclick="doShip()" style="border:none;cursor:pointer;font-family:inherit">🏄 Ship it</button>
+    <button class="cta" id="shipBtn" onclick="doShip()" style="border:none;cursor:pointer;font-family:inherit">3 · Get license &amp; ship 🏄</button>
     <div class="shiperr" id="shipErr"></div>
   </div>
 
@@ -276,12 +269,21 @@ async function refresh(){
   badge.textContent=status.dryRun?"DRY-RUN":"LIVE";
   badge.className="badge"+(status.dryRun?"":" live");
 
-  const licDot=document.getElementById("dot-license"),licSt=document.getElementById("state-license");
-  licDot.classList.toggle("on",!!status.licensed);
-  licSt.innerHTML=status.licensed
-    ?"active"
-    :`<a href="${status.buyUrl||'#'}" style="color:var(--accent);font-weight:600">get your license — free during beta →</a>`;
-  licSt.className="state"+(status.licensed?" ok":"");
+  LIC={licensed:!!status.licensed,buyUrl:status.buyUrl||"#"};
+  updateShipBtn();
+  maybeResumeShip();
+
+  // Self-heal a stranded consent page (e.g. Railway's "return to the app"):
+  // the grant is recorded, so re-running the chain sails straight through.
+  if(status.pendingConnect && status.pendingConnect.ageMs>20000 && document.visibilityState==="visible"){
+    const n=+(sessionStorage.getItem("ssConnRetry")||0), last=+(sessionStorage.getItem("ssConnRetryAt")||0);
+    if(n<2 && Date.now()-last>30000){
+      sessionStorage.setItem("ssConnRetry",n+1);
+      sessionStorage.setItem("ssConnRetryAt",Date.now());
+      location.href="/connect/all";
+      return;
+    }
+  }
 
   for(const p of ["github","railway","supabase"]){
     const on=status.connected.includes(p);
@@ -292,6 +294,7 @@ async function refresh(){
     st.className="state"+(on?" ok":"");
   }
   const allOn=["github","railway","supabase"].every(p=>status.connected.includes(p));
+  if(allOn){try{sessionStorage.removeItem("ssConnRetry");sessionStorage.removeItem("ssConnRetryAt");}catch(e){}}
   document.getElementById("connectBtn").style.display=allOn?"none":"inline-flex";
   document.getElementById("connectBtn").textContent=
     status.connected.length?"Connect remaining →":"Connect accounts →";
@@ -414,10 +417,40 @@ async function checkDomain(ev){
     else{m.textContent="✗ "+d+" is taken";m.className="availmsg bad";}
   }catch(e){m.textContent="✗ Check failed.";m.className="availmsg bad";}
 }
+let LIC={licensed:false,buyUrl:"#"};
+function updateShipBtn(){
+  const b=document.getElementById("shipBtn");
+  if(b.disabled)return;
+  b.innerHTML=LIC.licensed?"3 · Ship it 🏄":"3 · Get license &amp; ship 🏄";
+}
+function pendingShipBody(){
+  return {path:document.getElementById("shipPath").value.trim(),mode:domainMode,db:dbOn,
+    sub:document.getElementById("shipSub").value.trim(),domain:document.getElementById("shipDomain").value.trim()};
+}
+let resumeTried=false;
+function maybeResumeShip(){
+  if(resumeTried||!LIC.licensed)return;
+  let p=null;try{p=JSON.parse(localStorage.getItem("ssPendingShip")||"null");}catch(e){}
+  if(!p)return;
+  resumeTried=true;
+  try{localStorage.removeItem("ssPendingShip");}catch(e){}
+  if(p.path)document.getElementById("shipPath").value=p.path;
+  if(p.sub)document.getElementById("shipSub").value=p.sub;
+  if(p.domain)document.getElementById("shipDomain").value=p.domain;
+  domainMode=p.mode||"railway";dbOn=!!p.db;
+  document.querySelectorAll(".domopt").forEach(o=>o.classList.toggle("selected",o.dataset.mode===domainMode));
+  doShip();   // license just arrived — finish what they started
+}
 async function doShip(){
   const err=document.getElementById("shipErr");err.textContent="";
   const localPath=document.getElementById("shipPath").value.trim();
-  if(!localPath){err.textContent="Enter your project folder path.";return;}
+  if(!localPath){err.textContent="No project folder — open your project in Claude Code and say “ship this with ShipSurfer”.";return;}
+  if(!LIC.licensed){
+    // Stash the choices, buy, auto-activate, and we resume the ship on return.
+    try{localStorage.setItem("ssPendingShip",JSON.stringify(pendingShipBody()));}catch(e){}
+    location.href=LIC.buyUrl;
+    return;
+  }
   const body={localPath, provisionDb:dbOn};
   if(domainMode==="subdomain"){
     const s=document.getElementById("shipSub").value.trim();
@@ -439,10 +472,20 @@ async function doShip(){
     } else if(!r.ok){err.textContent=j.error||"Ship failed.";}
     else if(j.id)activeId=j.id;   // hand over to the live progress panel
   }catch(e){err.textContent="Could not reach the server.";}
-  btn.disabled=false;btn.textContent="🏄 Ship it";
+  btn.disabled=false;updateShipBtn();
   refresh();
 }
-try{const p=localStorage.getItem("ssPath");if(p)document.getElementById("shipPath").value=p;}catch(e){}
+try{
+  const qp=new URLSearchParams(location.search).get("path");
+  const p=qp||localStorage.getItem("ssPath");
+  if(p){document.getElementById("shipPath").value=p;if(qp)localStorage.setItem("ssPath",qp);}
+  const cur=document.getElementById("shipPath").value.trim();
+  if(cur){
+    const nm=cur.replace(/\/+$/,"").split("/").pop();
+    document.getElementById("shipProj").innerHTML="Shipping <b>"+nm+"</b> — choose a domain and hit ship.";
+    updateBanner();
+  }
+}catch(e){}
 
 refresh();setInterval(refresh,2000);
 </script>

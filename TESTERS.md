@@ -23,12 +23,13 @@ no settings, no config files. *(Prefer Terminal? The same one-liner works there.
 1. Open your project in **Claude Code** (the folder with your app).
 2. Say: **"ship this with ShipSurfer."** — it starts ShipSurfer for you and
    opens it in your browser.
-3. First time only:
-   - **Get your license** — at checkout, use the test card **4242 4242 4242 4242**
-     (any future expiry + any CVC). No real charge during the beta. Your key
-     activates automatically.
-   - **Connect** GitHub, Railway, and Supabase (one time)
-4. Pick a domain option and hit **Ship**. Watch the surfer — you'll get a live URL in a few minutes.
+3. **Connect** GitHub, Railway, and Supabase (first time only). If a provider
+   page stalls on "return to the app", switch back to the ShipSurfer tab — it
+   finishes automatically.
+4. Pick how it goes live, then hit **Get license & ship**. Checkout uses test
+   card **4242 4242 4242 4242** (any future expiry + any CVC — no real charge
+   during the beta); your key activates itself and the ship starts. Watch the
+   surfer — you'll get a live URL in a few minutes.
 
 Returning? Skip straight to shipping — license and connections are remembered.
 

@@ -105,6 +105,12 @@ app.get("/api/status", async (_req: Request, res: Response) => {
     accounts,
     licensed: lic.licensed,
     buyUrl: `${BUY_URL}?return=${ret}`,
+    pendingConnect:
+      lastConnectAttempt &&
+      !connected.includes(lastConnectAttempt.provider) &&
+      Date.now() - lastConnectAttempt.at < 10 * 60_000
+        ? { provider: lastConnectAttempt.provider, ageMs: Date.now() - lastConnectAttempt.at }
+        : null,
     ready: config.dryRun || (connected.includes("github") && connected.includes("railway")),
     user: user.id,
   });
@@ -120,9 +126,16 @@ const BROKER_PROVIDERS: Record<string, BrokerProvider> = {
   github: "github", railway: "railway", supabase: "supabase",
 };
 
+// Some providers (Railway) sometimes strand the user on a "return to the app"
+// page after consent instead of redirecting. The grant IS recorded, so we track
+// in-flight connect attempts; the dashboard polls /api/status and silently
+// re-runs the chain if an attempt stalls — second pass redirects straight through.
+let lastConnectAttempt: { provider: string; at: number } | null = null;
+
 app.get("/connect/:provider", (req, res) => {
   const provider = BROKER_PROVIDERS[req.params.provider];
   if (!provider) return res.status(404).send("unknown provider");
+  lastConnectAttempt = { provider, at: Date.now() };
   res.redirect(brokerStartUrl(provider));
 });
 
@@ -158,6 +171,7 @@ app.get("/connect/:provider/return", async (req, res) => {
       connectedAt: new Date().toISOString(),
     });
     log.ok(`${provider} connected as ${account}`);
+    if (lastConnectAttempt?.provider === provider) lastConnectAttempt = null;
 
     // GitHub App tokens only grant repo access where the app is INSTALLED.
     // Authorization without installation = token that can't create repos

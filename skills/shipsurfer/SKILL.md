@@ -30,19 +30,20 @@ curl -s http://localhost:4001/api/status >/dev/null 2>&1 && echo up || echo down
   the one-line installer at https://shipsurfer.app/paddleout.
 
 ### 2. Open the app
-Open the ShipSurfer app in the user's browser (goes straight to the ship page):
+Open the ShipSurfer app in the user's browser, passing the current project folder
+(the app uses it as the ship target — no typing for the user):
 ```bash
-open http://localhost:4001/surfing    # macOS
+open "http://localhost:4001/surfing?path=$(node -e 'console.log(encodeURIComponent(process.cwd()))')"    # macOS
 ```
 Tell the user: *"ShipSurfer's open in your browser. Connect your accounts (first time
 only), pick how it goes live, and hit Ship — I'll leave the surfing to you. 🏄"*
 
 ### 3. Let the app take over
 The user does everything from here in the UI:
-1. **Buy** — home CTA → `/buy` → pay $99 (one-time, lifetime).
-2. **Connect** — approve GitHub, Railway, and Supabase (once).
-3. **Ship** — on `/surfing`, pick a domain option and hit Ship; the surfer rides while
-   it provisions, then shows the live URL.
+1. **Connect** — approve GitHub, Railway, and Supabase (once).
+2. **Domain** — pick how the app goes live (Railway URL, free subdomain, or own domain).
+3. **Get license & ship** — one button: pays (once, free in beta), auto-activates,
+   and ships; the surfer rides while it provisions, then shows the live URL.
 
 You're done. If the user comes back with an error from the app, read it verbatim — the
 messages are specific and say exactly what to fix.
