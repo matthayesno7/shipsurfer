@@ -63,8 +63,6 @@ chmod +x "$LAUNCH"
 grn "✓ ShipSurfer installed."
 echo
 b "Next:"
-echo "  1. Add credentials to  $DIR/.env   (the file we sent you)"
-echo "  2. Start ShipSurfer:   ~/.shipsurfer/shipsurfer"
-echo "  3. In Claude Code, open your project and say:  \"ship this with ShipSurfer\""
+echo "  In Claude Code, open your project and say:  \"ship this with ShipSurfer\""
 echo
-dim "The skill is installed for Claude Code. First run: buy (free in beta) → connect accounts → ship."
+dim "No setup needed — ShipSurfer starts itself. First ship: get your license (free in beta), connect accounts, ship."

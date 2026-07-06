@@ -49,9 +49,21 @@ export async function createRepo(
     ).data;
     log.ok(`created repo ${repo.full_name}`);
   } catch (e) {
-    const me = (await octokit.users.getAuthenticated()).data;
-    repo = (await octokit.repos.get({ owner: me.login, repo: name })).data;
-    log.ok(`reusing existing repo ${repo.full_name}`);
+    // Create failed — maybe the repo already exists from a previous run.
+    try {
+      const me = (await octokit.users.getAuthenticated()).data;
+      repo = (await octokit.repos.get({ owner: me.login, repo: name })).data;
+      log.ok(`reusing existing repo ${repo.full_name}`);
+    } catch (e2) {
+      const msg = (err: unknown) => (err as Error)?.message || String(err);
+      throw new Error(
+        `GitHub couldn't create or find the repo "${name}". ` +
+          `Create failed (${msg(e)}); lookup failed (${msg(e2)}). ` +
+          `This usually means the GitHub connection lost repository access — ` +
+          `go to Connect accounts and reconnect GitHub, approving repository access when asked ` +
+          `(check github.com/settings/installations shows ShipSurfer with access to your repos).`
+      );
+    }
   }
 
   const pushUrl = repo.clone_url.replace(

@@ -115,6 +115,14 @@ function cloudflareRouter(isValidKey) {
   });
 
   r.post("/cf/domain/register", requireLicense, async (req, res) => {
+    // KILL SWITCH: registration spends ShipSurfer's money. Off unless explicitly
+    // enabled (set DOMAIN_BUYING=true on the server to allow it).
+    if (process.env.DOMAIN_BUYING !== "true") {
+      console.log(`[cf] BLOCKED domain register attempt: ${String(req.body.domain)} (license ${String(req.body.key).slice(0, 12)}…)`);
+      return res.status(403).json({
+        error: "Buying domains is invite-only during the beta — the free yourname.shipsurfer.app subdomain works today. Want a custom domain? Email matthayesno7@gmail.com.",
+      });
+    }
     const domain = String(req.body.domain);
     try {
       const out = await registerDomain(domain);

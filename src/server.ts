@@ -89,16 +89,22 @@ app.get("/connect/all", (_req, res) => {
 
 /* ── Status / connections ─────────────────────────────────────────────── */
 
-app.get("/api/status", (_req: Request, res: Response) => {
+app.get("/api/status", async (_req: Request, res: Response) => {
   const user = getUser(USER);
   const connected = Object.keys(user.connections);
   // account labels are stored in plaintext (only tokens are encrypted)
   const accounts: Record<string, string | undefined> = {};
   for (const p of connected) accounts[p] = user.connections[p as never] && (user.connections as any)[p].account;
+  // License status up front, so the UI can show "get license" BEFORE the user
+  // hits Ship and gets a surprise 402.
+  const lic = await ensureLicensed();
+  const ret = encodeURIComponent(`http://localhost:${config.port}/activate`);
   res.json({
     dryRun: config.dryRun,
     connected,
     accounts,
+    licensed: lic.licensed,
+    buyUrl: `${BUY_URL}?return=${ret}`,
     ready: config.dryRun || (connected.includes("github") && connected.includes("railway")),
     user: user.id,
   });
@@ -152,6 +158,34 @@ app.get("/connect/:provider/return", async (req, res) => {
       connectedAt: new Date().toISOString(),
     });
     log.ok(`${provider} connected as ${account}`);
+
+    // GitHub App tokens only grant repo access where the app is INSTALLED.
+    // Authorization without installation = token that can't create repos
+    // (fails later with a cryptic 404). Catch it here, at connect time.
+    if (provider === "github" && !config.dryRun) {
+      const slug = process.env.GITHUB_APP_SLUG || "shipsurfer";
+      try {
+        const r = await fetch("https://api.github.com/user/installations", {
+          headers: { Authorization: `Bearer ${tok.accessToken}`, Accept: "application/vnd.github+json" },
+        });
+        const d = (await r.json()) as { installations?: { app_slug?: string }[] };
+        const installed = (d.installations || []).some((i) => i.app_slug === slug);
+        if (!installed) {
+          log.warn(`GitHub authorized but app "${slug}" not installed — sending user to install`);
+          return res.send(
+            `<meta charset="utf-8"><body style="font-family:-apple-system,sans-serif;max-width:520px;margin:80px auto;line-height:1.6">
+             <h2>One more GitHub step 🏄</h2>
+             <p>Your GitHub account is connected, but ShipSurfer also needs access to
+             create repositories. Click below, choose <b>All repositories</b>, and you'll
+             land back here.</p>
+             <p><a href="https://github.com/apps/${slug}/installations/new"
+               style="display:inline-block;background:#1B6B52;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600">
+               Grant repository access →</a></p></body>`
+          );
+        }
+      } catch { /* verification is best-effort — don't block connect on a hiccup */ }
+    }
+
     advanceChain(res, provider);
   } catch (e) {
     res.status(500).send(`${provider} connect failed: ${(e as Error).message}. <a href="/surfing">Back</a>`);

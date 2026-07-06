@@ -157,7 +157,14 @@ app.post("/beta-signup", async (req, res) => {
           subject: `🏄 New ShipSurfer beta signup: ${email}`,
           text: `${email} joined the ShipSurfer beta.\n\nTotal signups: ${list.length}`,
         }),
-      }).catch((e) => console.log(`[beta] email notify failed: ${e.message}`));
+      })
+        .then(async (r) => {
+          if (r.ok) console.log(`[beta] email notify sent to ${NOTIFY_EMAIL}`);
+          else console.log(`[beta] email notify REJECTED (HTTP ${r.status}): ${await r.text()}`);
+        })
+        .catch((e) => console.log(`[beta] email notify failed: ${e.message}`));
+    } else {
+      console.log(`[beta] no RESEND_API_KEY set — skipping email notify`);
     }
   }
   res.json({ ok: true });
