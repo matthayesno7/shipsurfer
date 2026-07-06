@@ -85,14 +85,31 @@ export function pushLocalRepo(localPath: string, repo: CreatedRepo) {
     log.ok(`[dry-run] would push ${localPath} → ${repo.fullName}`);
     return;
   }
-  const git = (...args: string[]) =>
-    execFileSync("git", args, {
-      cwd: localPath,
-      stdio: "pipe",
-      // GIT_TERMINAL_PROMPT=0 makes git fail fast instead of hanging on a
-      // credential prompt (which would freeze the server's event loop).
-      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
-    });
+  const git = (...args: string[]) => {
+    try {
+      return execFileSync("git", args, {
+        cwd: localPath,
+        stdio: "pipe",
+        // GIT_TERMINAL_PROMPT=0 makes git fail fast instead of hanging on a
+        // credential prompt (which would freeze the server's event loop).
+        env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+      });
+    } catch (e) {
+      const m = (e as Error)?.message || String(e);
+      // macOS privacy (TCC): the app that launched ShipSurfer has no access to
+      // this folder (Documents/Desktop are gated per-app). Say so, usefully.
+      if (/Operation not permitted|EPERM/i.test(m)) {
+        throw new Error(
+          `macOS blocked access to your project folder (${localPath}). ` +
+            `Fix: quit ShipSurfer, open the Terminal app, run ~/.shipsurfer/shipsurfer, ` +
+            `and click Allow if macOS asks about folder access. ` +
+            `(Or: System Settings → Privacy & Security → Files and Folders → allow ` +
+            `Documents for your terminal.) Then hit Ship again.`
+        );
+      }
+      throw e;
+    }
+  };
 
   // ALWAYS init a repo scoped to this folder. Critical: if the project sits
   // inside another git repo (e.g. the user's home dir is a repo), git would
